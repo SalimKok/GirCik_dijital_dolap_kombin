@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gircik/screens/register_screen.dart';
 import 'package:gircik/screens/home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Giriş ekranı: e-posta ve şifre ile giriş, kayıt sayfasına geçiş.
 class LoginScreen extends StatelessWidget {
@@ -34,6 +35,39 @@ class _LoginBodyState extends State<_LoginBody> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _rememberMe = false;
+
+  static const String _keyRememberMe = 'login_remember_me';
+  static const String _keyRememberedEmail = 'login_remembered_email';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedEmail();
+  }
+
+  Future<void> _loadRememberedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool(_keyRememberMe) ?? false;
+    final email = prefs.getString(_keyRememberedEmail) ?? '';
+    if (!mounted) return;
+    setState(() {
+      _rememberMe = rememberMe;
+      if (rememberMe && email.isNotEmpty) {
+        _emailController.text = email;
+      }
+    });
+  }
+
+  Future<void> _saveRememberMe(bool value, String? email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyRememberMe, value);
+    if (value && email != null && email.trim().isNotEmpty) {
+      await prefs.setString(_keyRememberedEmail, email.trim());
+    } else if (!value) {
+      await prefs.remove(_keyRememberedEmail);
+    }
+  }
 
   @override
   void dispose() {
@@ -46,6 +80,8 @@ class _LoginBodyState extends State<_LoginBody> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    await _saveRememberMe(_rememberMe, _emailController.text.trim());
     if (!mounted) return;
     setState(() => _isLoading = false);
     widget.onLoginSuccess();
@@ -141,6 +177,37 @@ class _LoginBodyState extends State<_LoginBody> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (value) {
+                              setState(() => _rememberMe = value ?? false);
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            activeColor: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() => _rememberMe = !_rememberMe);
+                          },
+                          child: Text(
+                            'Beni hatırla',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 28),
                     FilledButton(

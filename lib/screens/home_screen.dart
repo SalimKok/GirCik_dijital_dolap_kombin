@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:gircik/screens/wardrobe_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -102,7 +102,13 @@ class HomeScreen extends StatelessWidget {
         icon: Icons.checkroom_rounded,
         title: 'Gardırop',
         subtitle: 'Kıyafetlerini yönet',
-        onTap: () {},
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const WardrobeScreen(),
+            ),
+          );
+        },
       ),
       _QuickAction(
         icon: Icons.auto_awesome_rounded,

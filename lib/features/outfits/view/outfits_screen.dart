@@ -1,69 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:gircik/screens/outfit_recommendation_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gircik/features/outfits/view/outfit_recommendation_screen.dart';
+import 'package:gircik/features/outfits/viewmodel/outfits_viewmodel.dart';
+import 'package:gircik/data/models/outfit_item.dart';
 
-class OutfitsScreen extends StatefulWidget {
+class OutfitsScreen extends ConsumerStatefulWidget {
   const OutfitsScreen({super.key});
 
   @override
-  State<OutfitsScreen> createState() => _OutfitsScreenState();
+  ConsumerState<OutfitsScreen> createState() => _OutfitsScreenState();
 }
 
-class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProviderStateMixin {
+class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  // Mock data for outfits
-  final List<Map<String, dynamic>> _outfits = [
-    {
-      'id': '1',
-      'title': 'Hafta Sonu Yürüyüş',
-      'style': 'Sportif',
-      'season': 'İlkbahar',
-      'isFavorite': true,
-      'items': [
-        {'name': 'Kapüşonlu Sweat', 'icon': Icons.dry_cleaning_rounded},
-        {'name': 'Gri Eşofman', 'icon': Icons.airline_seat_legroom_normal_rounded},
-        {'name': 'Spor Ayakkabı', 'icon': Icons.snowshoeing_rounded},
-      ],
-    },
-    {
-      'id': '2',
-      'title': 'Ofis Günlüğü',
-      'style': 'Şık / Klasik',
-      'season': 'Sonbahar',
-      'isFavorite': false,
-      'items': [
-        {'name': 'Beyaz Gömlek', 'icon': Icons.dry_cleaning_rounded},
-        {'name': 'Siyah Pantolon', 'icon': Icons.airline_seat_legroom_normal_rounded},
-        {'name': 'Klasik Ayakkabı', 'icon': Icons.snowshoeing_rounded},
-        {'name': 'Deri Kemer', 'icon': Icons.watch_rounded},
-      ],
-    },
-    {
-      'id': '3',
-      'title': 'Rahat Akşam',
-      'style': 'Casual',
-      'season': 'Yaz',
-      'isFavorite': true,
-      'items': [
-        {'name': 'Kısa Kol Tişört', 'icon': Icons.dry_cleaning_rounded},
-        {'name': 'Açık Mavi Şort', 'icon': Icons.airline_seat_legroom_normal_rounded},
-        {'name': 'Sneaker', 'icon': Icons.snowshoeing_rounded},
-      ],
-    },
-    {
-      'id': '4',
-      'title': 'Kış Yemeği',
-      'style': 'Şık',
-      'season': 'Kış',
-      'isFavorite': false,
-      'items': [
-        {'name': 'Bordo Kazak', 'icon': Icons.dry_cleaning_rounded},
-        {'name': 'Koyu Kot Pantolon', 'icon': Icons.airline_seat_legroom_normal_rounded},
-        {'name': 'Bot', 'icon': Icons.snowshoeing_rounded},
-        {'name': 'Atkı', 'icon': Icons.watch_rounded},
-      ],
-    },
-  ];
 
   @override
   void initState() {
@@ -77,21 +26,10 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
     super.dispose();
   }
 
-  void _toggleFavorite(String id) {
-    setState(() {
-      final index = _outfits.indexWhere((element) => element['id'] == id);
-      if (index != -1) {
-        _outfits[index]['isFavorite'] = !(_outfits[index]['isFavorite'] as bool);
-      }
-    });
-  }
-
-  List<Map<String, dynamic>> get _favoriteOutfits =>
-      _outfits.where((outfit) => outfit['isFavorite'] == true).toList();
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final outfitsState = ref.watch(outfitsViewModelProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -104,13 +42,25 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildOutfitsList(_outfits, 'Henüz kombin eklemedin.', 'Yeni bir kombin oluşturarak başla!', theme),
-          _buildOutfitsList(_favoriteOutfits, 'Favori kombinin yok.', 'Beğendiğin kombinleri favorilerine ekle.', theme),
-        ],
-      ),
+      body: outfitsState.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildOutfitsList(
+                  outfitsState.outfits,
+                  'Henüz kombin eklemedin.',
+                  'Yeni bir kombin oluşturarak başla!',
+                  theme,
+                ),
+                _buildOutfitsList(
+                  outfitsState.favoriteOutfits,
+                  'Favori kombinin yok.',
+                  'Beğendiğin kombinleri favorilerine ekle.',
+                  theme,
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.of(context).push(
@@ -125,7 +75,7 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildOutfitsList(List<Map<String, dynamic>> list, String emptyTitle, String emptySubtitle, ThemeData theme) {
+  Widget _buildOutfitsList(List<OutfitItem> list, String emptyTitle, String emptySubtitle, ThemeData theme) {
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -142,7 +92,7 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 80), // Bottom padding for FAB
+      padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 80),
       itemCount: list.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
@@ -152,9 +102,7 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildOutfitCard(Map<String, dynamic> outfit, ThemeData theme) {
-    final bool isFavorite = outfit['isFavorite'] as bool;
-
+  Widget _buildOutfitCard(OutfitItem outfit, ThemeData theme) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -177,7 +125,7 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        outfit['title'],
+                        outfit.title,
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -186,18 +134,20 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
                       Wrap(
                         spacing: 8,
                         children: [
-                          _buildTag(outfit['style'], theme.colorScheme.primary),
-                          _buildTag(outfit['season'], theme.colorScheme.secondary),
+                          _buildTag(outfit.style, theme.colorScheme.primary),
+                          _buildTag(outfit.season, theme.colorScheme.secondary),
                         ],
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  onPressed: () => _toggleFavorite(outfit['id']),
+                  onPressed: () {
+                    ref.read(outfitsViewModelProvider.notifier).toggleFavorite(outfit.id);
+                  },
                   icon: Icon(
-                    isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: isFavorite ? Colors.red : theme.colorScheme.onSurfaceVariant,
+                    outfit.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: outfit.isFavorite ? Colors.red : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -210,7 +160,7 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
             child: Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: (outfit['items'] as List<dynamic>).map((item) {
+              children: outfit.items.map((item) {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -221,14 +171,14 @@ class _OutfitsScreenState extends State<OutfitsScreen> with SingleTickerProvider
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        item['icon'] as IconData,
+                        item.icon,
                         size: 20,
                         color: theme.colorScheme.primary,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      item['name'] as String,
+                      item.name,
                       style: theme.textTheme.bodyMedium,
                     ),
                   ],

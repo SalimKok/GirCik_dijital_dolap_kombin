@@ -31,37 +31,14 @@ class _LaundryScreenState extends ConsumerState<LaundryScreen> with SingleTicker
     final laundryState = ref.watch(laundryViewModelProvider);
 
     if (laundryState.isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Hijyen & Yıkama')),
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hijyen & Yıkama'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Kullanım Sınırı Hakkında'),
-                  content: const Text(
-                    'Kıyafetlerinizin türüne göre belirlenen kullanım sınırlarına ulaşıldığında, o kıyafet otomatik olarak kirliler (Yıkanması Gerekenler) listesine düşer.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Anladım'),
-                    )
-                  ],
-                ),
-              );
-            },
-          )
-        ],
+        toolbarHeight: 0,
         bottom: TabBar(
           controller: _tabController,
           labelPadding: const EdgeInsets.symmetric(horizontal: 4),

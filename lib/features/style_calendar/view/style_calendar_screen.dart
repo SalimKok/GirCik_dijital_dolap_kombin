@@ -25,18 +25,14 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
     final calState = ref.watch(styleCalendarViewModelProvider);
 
     if (calState.isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Stil Takvimi')),
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     final selectedEvents = calState.getEventsForDay(calState.selectedDay!);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Stil Takvimi'),
-      ),
       body: Column(
         children: [
           _buildCalendar(theme, calState),

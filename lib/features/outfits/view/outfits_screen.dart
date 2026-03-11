@@ -33,7 +33,7 @@ class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTicker
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kombinlerim'),
+        toolbarHeight: 0,
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

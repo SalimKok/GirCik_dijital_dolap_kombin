@@ -13,9 +13,6 @@ class WardrobeScreen extends ConsumerWidget {
     final wardrobeState = ref.watch(wardrobeViewModelProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dijital Gardırop'),
-      ),
       body: wardrobeState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(

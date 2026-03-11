@@ -40,8 +40,12 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 4,
+        shadowColor: _onSurface.withValues(alpha: 0.08),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: _outline.withValues(alpha: 0.3)),
+        ),
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
       ),
@@ -49,10 +53,12 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: _primary,
           foregroundColor: Colors.white,
-          elevation: 0,
+          elevation: 4,
+          shadowColor: _primary.withValues(alpha: 0.25),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: _primary.withValues(alpha: 0.3)),
           ),
           textStyle: const TextStyle(
             fontSize: 15,
@@ -64,9 +70,12 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: _primary,
           foregroundColor: Colors.white,
+          elevation: 4,
+          shadowColor: _primary.withValues(alpha: 0.25),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: _primary.withValues(alpha: 0.3)),
           ),
         ),
       ),
@@ -112,6 +121,129 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(color: _onSurfaceVariant),
         hintStyle: const TextStyle(color: _onSurfaceVariant),
+      ),
+    );
+  }
+
+  // ── Koyu Tema ──────────────────────────────────────────────
+  static const Color _darkPrimary = Color(0xFFC4A77D);       // Bej altın
+  static const Color _darkPrimaryContainer = Color(0xFF5C4A35);
+  static const Color _darkSurface = Color(0xFF1A1614);        // Koyu kahve-siyah
+  static const Color _darkSurfaceVariant = Color(0xFF2A2420);
+  static const Color _darkOnSurface = Color(0xFFF0EBE3);     // Açık bej metin
+  static const Color _darkOnSurfaceVariant = Color(0xFFB0A89E);
+  static const Color _darkOutline = Color(0xFF4A433C);
+  static const Color _darkCardColor = Color(0xFF242019);
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.dark(
+        primary: _darkPrimary,
+        primaryContainer: _darkPrimaryContainer,
+        surface: _darkSurface,
+        surfaceContainerHighest: _darkSurfaceVariant,
+        onSurface: _darkOnSurface,
+        onSurfaceVariant: _darkOnSurfaceVariant,
+        outline: _darkOutline,
+      ),
+      scaffoldBackgroundColor: _darkSurface,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: _darkOnSurface,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.5,
+        ),
+        iconTheme: IconThemeData(color: _darkOnSurface),
+      ),
+      cardTheme: CardThemeData(
+        color: _darkCardColor,
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: _darkOutline.withValues(alpha: 0.4)),
+        ),
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _darkPrimary,
+          foregroundColor: _darkSurface,
+          elevation: 4,
+          shadowColor: _darkPrimary.withValues(alpha: 0.3),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: _darkPrimary.withValues(alpha: 0.4)),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: _darkPrimary,
+          foregroundColor: _darkSurface,
+          elevation: 4,
+          shadowColor: _darkPrimary.withValues(alpha: 0.3),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: _darkPrimary.withValues(alpha: 0.4)),
+          ),
+        ),
+      ),
+      textTheme: const TextTheme(
+        headlineMedium: TextStyle(
+          color: _darkOnSurface,
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.5,
+        ),
+        titleMedium: TextStyle(
+          color: _darkOnSurface,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyMedium: TextStyle(
+          color: _darkOnSurfaceVariant,
+          fontSize: 14,
+          height: 1.4,
+        ),
+        labelLarge: TextStyle(
+          color: _darkOnSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: _darkCardColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _darkOutline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _darkPrimary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFCF6679)),
+        ),
+        labelStyle: const TextStyle(color: _darkOnSurfaceVariant),
+        hintStyle: const TextStyle(color: _darkOnSurfaceVariant),
       ),
     );
   }

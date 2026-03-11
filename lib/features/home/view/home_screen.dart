@@ -10,14 +10,12 @@ class HomeScreen extends ConsumerWidget {
     final homeState = ref.watch(homeViewModelProvider);
 
     return Scaffold(
-      body: SafeArea(
-        child: homeState.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : CustomScrollView(
-                slivers: [
-                  _buildAppBar(context),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: homeState.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         _buildWelcomeSection(context, homeState.userName),
@@ -43,41 +41,9 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
-    final theme = Theme.of(context);
-    return SliverAppBar(
-      expandedHeight: 0,
-      floating: true,
-      backgroundColor: theme.scaffoldBackgroundColor,
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              Icons.checkroom_rounded,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            'GiyÇık',
-            style: theme.appBarTheme.titleTextStyle,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildWelcomeSection(BuildContext context, String userName) {
     final theme = Theme.of(context);

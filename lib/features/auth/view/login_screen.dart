@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gircik/screens/register_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gircik/features/auth/view/register_screen.dart';
 import 'package:gircik/screens/main_layout_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:gircik/features/auth/viewmodel/auth_viewmodel.dart';
 
 /// Giriş ekranı: e-posta ve şifre ile giriş, kayıt sayfasına geçiş.
 class LoginScreen extends StatelessWidget {
@@ -20,21 +22,20 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-class _LoginBody extends StatefulWidget {
+class _LoginBody extends ConsumerStatefulWidget {
   const _LoginBody({required this.onLoginSuccess});
 
   final VoidCallback onLoginSuccess;
 
   @override
-  State<_LoginBody> createState() => _LoginBodyState();
+  ConsumerState<_LoginBody> createState() => _LoginBodyState();
 }
 
-class _LoginBodyState extends State<_LoginBody> {
+class _LoginBodyState extends ConsumerState<_LoginBody> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
   bool _rememberMe = false;
 
   static const String _keyRememberMe = 'login_remember_me';
@@ -78,17 +79,30 @@ class _LoginBodyState extends State<_LoginBody> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    await _saveRememberMe(_rememberMe, _emailController.text.trim());
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    widget.onLoginSuccess();
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const MainLayoutScreen()),
+    
+    final success = await ref.read(authViewModelProvider.notifier).login(
+      _emailController.text.trim(),
+      _passwordController.text,
+      _rememberMe,
     );
+    
+    if (!mounted) return;
+    
+    if (success) {
+      await _saveRememberMe(_rememberMe, _emailController.text.trim());
+      if (!mounted) return;
+      widget.onLoginSuccess();
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const MainLayoutScreen()),
+      );
+    } else {
+      final error = ref.read(authViewModelProvider).error;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Giriş başarısız: $error')),
+        );
+      }
+    }
   }
 
   void _goToRegister() {
@@ -111,6 +125,9 @@ class _LoginBodyState extends State<_LoginBody> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authViewModelProvider);
+    final isLoading = authState.isLoading;
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -211,8 +228,8 @@ class _LoginBodyState extends State<_LoginBody> {
                     ),
                     const SizedBox(height: 28),
                     FilledButton(
-                      onPressed: _isLoading ? null : _submit,
-                      child: _isLoading
+                      onPressed: isLoading ? null : _submit,
+                      child: isLoading
                           ? const SizedBox(
                               height: 22,
                               width: 22,

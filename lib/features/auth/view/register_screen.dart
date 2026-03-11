@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gircik/screens/main_layout_screen.dart';
+import 'package:gircik/features/auth/viewmodel/auth_viewmodel.dart';
 
 /// Kayıt ekranı: ad, e-posta ve şifre ile yeni hesap oluşturma.
 class RegisterScreen extends StatelessWidget {
@@ -21,22 +23,21 @@ class RegisterScreen extends StatelessWidget {
   }
 }
 
-class _RegisterBody extends StatefulWidget {
+class _RegisterBody extends ConsumerStatefulWidget {
   const _RegisterBody({required this.onRegisterSuccess});
 
   final VoidCallback onRegisterSuccess;
 
   @override
-  State<_RegisterBody> createState() => _RegisterBodyState();
+  ConsumerState<_RegisterBody> createState() => _RegisterBodyState();
 }
 
-class _RegisterBodyState extends State<_RegisterBody> {
+class _RegisterBodyState extends ConsumerState<_RegisterBody> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -48,21 +49,38 @@ class _RegisterBodyState extends State<_RegisterBody> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    widget.onRegisterSuccess();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const MainLayoutScreen()),
-      (route) => false,
+    
+    final success = await ref.read(authViewModelProvider.notifier).register(
+      _nameController.text.trim(),
+      _emailController.text.trim(),
+      _passwordController.text,
     );
+    
+    if (!mounted) return;
+    
+    if (success) {
+      widget.onRegisterSuccess();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const MainLayoutScreen()),
+        (route) => false,
+      );
+    } else {
+      final error = ref.read(authViewModelProvider).error;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kayıt başarısız: $error')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authViewModelProvider);
+    final isLoading = authState.isLoading;
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -148,8 +166,8 @@ class _RegisterBodyState extends State<_RegisterBody> {
               ),
               const SizedBox(height: 28),
               FilledButton(
-                onPressed: _isLoading ? null : _submit,
-                child: _isLoading
+                onPressed: isLoading ? null : _submit,
+                child: isLoading
                     ? const SizedBox(
                         height: 22,
                         width: 22,

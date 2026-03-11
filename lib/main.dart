@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:gircik/core/app_start_screen.dart';
 import 'package:gircik/theme/app_theme.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 void main() {
-  runApp(const GircikApp());
+  runApp(
+    const ProviderScope(
+      child: GircikApp(),
+    ),
+  );
 }
 
 class GircikApp extends StatelessWidget {

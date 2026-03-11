@@ -1,23 +1,35 @@
 import 'package:flutter/material.dart';
-class HomeScreen extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gircik/features/home/viewmodel/home_viewmodel.dart';
+
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final homeState = ref.watch(homeViewModelProvider);
+
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(context),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildWelcomeSection(context),
-                  const SizedBox(height: 28),
-                  _buildSectionTitle(context, 'Yaklaşan Önemli Bilgiler'),
-                  const SizedBox(height: 12),
-                  _buildUpcomingInfo(context),
+        child: homeState.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : CustomScrollView(
+                slivers: [
+                  _buildAppBar(context),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        _buildWelcomeSection(context, homeState.userName),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(context, 'Yaklaşan Önemli Bilgiler'),
+                        const SizedBox(height: 12),
+                        _buildUpcomingInfo(
+                          context,
+                          homeState.laundryCount,
+                          homeState.nextEventTitle,
+                          homeState.nextEventTime,
+                        ),
                   const SizedBox(height: 28),
                   _buildSectionTitle(context, 'Favori Kombinler'),
                   const SizedBox(height: 12),
@@ -67,13 +79,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWelcomeSection(BuildContext context) {
+  Widget _buildWelcomeSection(BuildContext context, String userName) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Merhaba',
+          'Merhaba, $userName',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             fontSize: 15,
@@ -99,13 +111,20 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildUpcomingInfo(BuildContext context) {
+  Widget _buildUpcomingInfo(
+    BuildContext context,
+    int laundryCount,
+    String nextEventTitle,
+    String nextEventTime,
+  ) {
     return Column(
       children: [
         _InfoCard(
           icon: Icons.local_laundry_service_rounded,
           title: 'Yıkanması Gerekenler',
-          subtitle: '3 kıyafetin yıkanma vakti geldi.',
+          subtitle: laundryCount > 0 
+            ? '$laundryCount kıyafetin yıkanma vakti geldi.' 
+            : 'Yıkanacak kıyafet yok.',
           color: Colors.blue,
           onTap: () {},
         ),
@@ -113,7 +132,7 @@ class HomeScreen extends StatelessWidget {
         _InfoCard(
           icon: Icons.event_rounded,
           title: 'Yaklaşan Etkinlik',
-          subtitle: 'Yarın akşam: İş Yemeği',
+          subtitle: '$nextEventTime $nextEventTitle',
           color: Colors.orange,
           onTap: () {},
         ),

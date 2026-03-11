@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gircik/screens/home_screen.dart';
+import 'package:gircik/features/home/view/home_screen.dart';
 import 'package:gircik/screens/wardrobe_screen.dart';
 import 'package:gircik/screens/outfits_screen.dart';
 import 'package:gircik/screens/style_calendar_screen.dart';

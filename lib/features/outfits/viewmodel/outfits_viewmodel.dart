@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gircik/data/models/outfit_item.dart';
+import 'package:gircik/features/outfits/repository/outfit_repository.dart';
 
 // ViewModel State
 class OutfitsState {
@@ -33,8 +33,11 @@ class OutfitsState {
 
 // ViewModel (Notifier)
 class OutfitsViewModel extends Notifier<OutfitsState> {
+  late final OutfitRepository _repository;
+
   @override
   OutfitsState build() {
+    _repository = ref.watch(outfitRepositoryProvider);
     Future.microtask(() => loadOutfits());
     return OutfitsState(isLoading: true);
   }
@@ -42,79 +45,47 @@ class OutfitsViewModel extends Notifier<OutfitsState> {
   Future<void> loadOutfits() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      // Simulate API or DB
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      final mockData = [
-        const OutfitItem(
-          id: '1',
-          title: 'Hafta Sonu Yürüyüş',
-          style: 'Sportif',
-          season: 'İlkbahar',
-          isFavorite: true,
-          items: [
-            OutfitItemData(name: 'Kapüşonlu Sweat', icon: Icons.dry_cleaning_rounded),
-            OutfitItemData(name: 'Gri Eşofman', icon: Icons.airline_seat_legroom_normal_rounded),
-            OutfitItemData(name: 'Spor Ayakkabı', icon: Icons.snowshoeing_rounded),
-          ],
-        ),
-        const OutfitItem(
-          id: '2',
-          title: 'Ofis Günlüğü',
-          style: 'Şık / Klasik',
-          season: 'Sonbahar',
-          isFavorite: false,
-          items: [
-            OutfitItemData(name: 'Beyaz Gömlek', icon: Icons.dry_cleaning_rounded),
-            OutfitItemData(name: 'Siyah Pantolon', icon: Icons.airline_seat_legroom_normal_rounded),
-            OutfitItemData(name: 'Klasik Ayakkabı', icon: Icons.snowshoeing_rounded),
-            OutfitItemData(name: 'Deri Kemer', icon: Icons.watch_rounded),
-          ],
-        ),
-        const OutfitItem(
-          id: '3',
-          title: 'Rahat Akşam',
-          style: 'Casual',
-          season: 'Yaz',
-          isFavorite: true,
-          items: [
-            OutfitItemData(name: 'Kısa Kol Tişört', icon: Icons.dry_cleaning_rounded),
-            OutfitItemData(name: 'Açık Mavi Şort', icon: Icons.airline_seat_legroom_normal_rounded),
-            OutfitItemData(name: 'Sneaker', icon: Icons.snowshoeing_rounded),
-          ],
-        ),
-        const OutfitItem(
-          id: '4',
-          title: 'Kış Yemeği',
-          style: 'Şık',
-          season: 'Kış',
-          isFavorite: false,
-          items: [
-            OutfitItemData(name: 'Bordo Kazak', icon: Icons.dry_cleaning_rounded),
-            OutfitItemData(name: 'Koyu Kot Pantolon', icon: Icons.airline_seat_legroom_normal_rounded),
-            OutfitItemData(name: 'Bot', icon: Icons.snowshoeing_rounded),
-            OutfitItemData(name: 'Atkı', icon: Icons.watch_rounded),
-          ],
-        ),
-      ];
-
-      state = state.copyWith(isLoading: false, outfits: mockData);
+      final remoteOutfits = await _repository.getOutfits();
+      state = state.copyWith(isLoading: false, outfits: remoteOutfits);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  void toggleFavorite(String id) {
+  Future<void> toggleFavorite(String id) async {
+    // Optimistic UI update
+    final initialOutfits = state.outfits;
     final updatedOutfits = state.outfits.map((outfit) {
       if (outfit.id == id) {
         return outfit.copyWith(isFavorite: !outfit.isFavorite);
       }
       return outfit;
     }).toList();
-
     state = state.copyWith(outfits: updatedOutfits);
+
+    try {
+      // API call
+      await _repository.toggleFavorite(id);
+    } catch (e) {
+      // Revert on failure
+      state = state.copyWith(outfits: initialOutfits, error: e.toString());
+    }
+  }
+  
+  Future<void> addOutfit(OutfitItem outfit) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final newOutfit = await _repository.createOutfit(outfit);
+      state = state.copyWith(
+        isLoading: false, 
+        outfits: [...state.outfits, newOutfit]
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 }
+
 
 // Global Provider
 final outfitsViewModelProvider = NotifierProvider<OutfitsViewModel, OutfitsState>(() {

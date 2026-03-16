@@ -31,4 +31,24 @@ class ClothingItem {
       usageCount: usageCount ?? this.usageCount,
     );
   }
+
+  factory ClothingItem.fromJson(Map<String, dynamic> json) {
+    return ClothingItem(
+      id: json['id'].toString(),
+      name: json['name'] as String,
+      category: json['category'] as String,
+      color: json['color'] as String,
+      usageCount: json['usage_count'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'category': category,
+      'color': color,
+      'usage_count': usageCount,
+    };
+  }
 }

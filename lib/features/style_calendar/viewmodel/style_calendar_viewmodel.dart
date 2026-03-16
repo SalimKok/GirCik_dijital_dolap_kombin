@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:gircik/data/models/calendar_event.dart';
+import 'package:gircik/features/style_calendar/repository/calendar_repository.dart';
 
 // ViewModel State
 class StyleCalendarState {
@@ -46,8 +47,11 @@ class StyleCalendarState {
 
 // ViewModel (Notifier)
 class StyleCalendarViewModel extends Notifier<StyleCalendarState> {
+  late final CalendarRepository _repository;
+
   @override
   StyleCalendarState build() {
+    _repository = ref.watch(calendarRepositoryProvider);
     final now = DateTime.now();
     Future.microtask(() => loadEvents());
     return StyleCalendarState(
@@ -60,28 +64,8 @@ class StyleCalendarViewModel extends Notifier<StyleCalendarState> {
   Future<void> loadEvents() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-
-      final now = DateTime.now();
-      final mockEvents = [
-        CalendarEvent(
-          id: '1',
-          date: now.subtract(const Duration(days: 1)),
-          title: 'İş Görüşmesi - Lacivert Takım',
-        ),
-        CalendarEvent(
-          id: '2',
-          date: now,
-          title: 'Akşam Yemeği - Siyah Elbise',
-        ),
-        CalendarEvent(
-          id: '3',
-          date: now.add(const Duration(days: 2)),
-          title: 'Hafta Sonu Yürüyüşü - Spor Kombin',
-        ),
-      ];
-
-      state = state.copyWith(isLoading: false, events: mockEvents);
+      final remoteEvents = await _repository.getEvents();
+      state = state.copyWith(isLoading: false, events: remoteEvents);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -99,8 +83,17 @@ class StyleCalendarViewModel extends Notifier<StyleCalendarState> {
     state = state.copyWith(focusedDay: focusedDay);
   }
 
-  void addEvent(CalendarEvent event) {
-    state = state.copyWith(events: [...state.events, event]);
+  Future<void> addEvent(CalendarEvent event) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final newEvent = await _repository.createEvent(event);
+      state = state.copyWith(
+        isLoading: false, 
+        events: [...state.events, newEvent]
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 }
 
@@ -109,3 +102,4 @@ final styleCalendarViewModelProvider =
     NotifierProvider<StyleCalendarViewModel, StyleCalendarState>(() {
   return StyleCalendarViewModel();
 });
+

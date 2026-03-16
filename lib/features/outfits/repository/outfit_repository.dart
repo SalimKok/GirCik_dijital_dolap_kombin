@@ -1,0 +1,64 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gircik/core/network/api_client.dart';
+import 'package:gircik/data/models/outfit_item.dart';
+
+class OutfitRepository {
+  final ApiClient _apiClient;
+
+  OutfitRepository(this._apiClient);
+
+  Future<List<OutfitItem>> getOutfits() async {
+    try {
+      final response = await _apiClient.client.get('/outfits/');
+      final data = response.data as List;
+      return data.map((item) => OutfitItem.fromJson(item)).toList();
+    } catch (e) {
+      throw Exception('Kombinler getirilemedi: \${_handleError(e)}');
+    }
+  }
+
+  Future<OutfitItem> createOutfit(OutfitItem outfit) async {
+    try {
+      final response = await _apiClient.client.post(
+        '/outfits/',
+        data: outfit.toJson()..remove('id'),
+      );
+      return OutfitItem.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Kombin oluşturulamadı: \${_handleError(e)}');
+    }
+  }
+
+  Future<void> deleteOutfit(String id) async {
+    try {
+      await _apiClient.client.delete('/outfits/$id');
+    } catch (e) {
+      throw Exception('Kombin silinemedi: \${_handleError(e)}');
+    }
+  }
+
+  Future<OutfitItem> toggleFavorite(String id) async {
+    try {
+      final response = await _apiClient.client.patch('/outfits/$id/favorite');
+      return OutfitItem.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Favori durumu güncellenemedi: \${_handleError(e)}');
+    }
+  }
+
+  String _handleError(dynamic error) {
+    if (error is DioException) {
+      if (error.response?.data != null && error.response?.data['detail'] != null) {
+        return error.response!.data['detail'].toString();
+      }
+      return error.message ?? 'Bilinmeyen bir hata oluştu';
+    }
+    return error.toString();
+  }
+}
+
+final outfitRepositoryProvider = Provider((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return OutfitRepository(apiClient);
+});

@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gircik/features/auth/repository/auth_repository.dart';
+import 'package:gircik/features/laundry/repository/laundry_repository.dart';
+import 'package:gircik/features/style_calendar/repository/calendar_repository.dart';
 
 // ViewModel State
 class HomeState {
@@ -39,8 +42,16 @@ class HomeState {
 
 // ViewModel (Notifier)
 class HomeViewModel extends Notifier<HomeState> {
+  late final AuthRepository _authRepo;
+  late final LaundryRepository _laundryRepo;
+  late final CalendarRepository _calendarRepo;
+
   @override
   HomeState build() {
+    _authRepo = ref.watch(authRepositoryProvider);
+    _laundryRepo = ref.watch(laundryRepositoryProvider);
+    _calendarRepo = ref.watch(calendarRepositoryProvider);
+    
     // Initial fetch when ViewModel is created
     Future.microtask(() => loadHomeData());
     return HomeState(isLoading: true);
@@ -49,16 +60,38 @@ class HomeViewModel extends Notifier<HomeState> {
   Future<void> loadHomeData() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      // Simulate API or Database fetch
-      await Future<void>.delayed(const Duration(milliseconds: 800));
+      final user = await _authRepo.getCurrentUser();
+      final laundryItems = await _laundryRepo.getLaundryItems();
+      final calendarEvents = await _calendarRepo.getEvents();
 
-      // Mock Data
+      final needsWashCount = laundryItems.where((i) => i.status.name == 'needsWash').length;
+      
+      String nextEventTitle = 'Yaklaşan etkinlik yok';
+      String nextEventTime = '';
+      
+      final now = DateTime.now();
+      final upcomingEvents = calendarEvents.where((e) => e.date.isAfter(now)).toList();
+      if (upcomingEvents.isNotEmpty) {
+        upcomingEvents.sort((a, b) => a.date.compareTo(b.date));
+        final nextEvent = upcomingEvents.first;
+        nextEventTitle = nextEvent.title;
+        
+        final diff = nextEvent.date.difference(now);
+        if (diff.inDays == 0) {
+          nextEventTime = 'Bugün:';
+        } else if (diff.inDays == 1) {
+          nextEventTime = 'Yarın:';
+        } else {
+          nextEventTime = '\${diff.inDays} gün sonra:';
+        }
+      }
+
       state = state.copyWith(
         isLoading: false,
-        userName: 'Ahmet',
-        laundryCount: 3,
-        nextEventTitle: 'İş Yemeği',
-        nextEventTime: 'Yarın akşam:',
+        userName: user.name,
+        laundryCount: needsWashCount,
+        nextEventTitle: nextEventTitle,
+        nextEventTime: nextEventTime,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -70,3 +103,4 @@ class HomeViewModel extends Notifier<HomeState> {
 final homeViewModelProvider = NotifierProvider<HomeViewModel, HomeState>(() {
   return HomeViewModel();
 });
+

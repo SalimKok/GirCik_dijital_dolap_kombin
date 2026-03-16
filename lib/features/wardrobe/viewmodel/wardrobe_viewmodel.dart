@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gircik/data/models/clothing_item.dart';
+import 'package:gircik/features/wardrobe/repository/clothing_repository.dart';
 
 // ViewModel State
 class WardrobeState {
@@ -50,8 +51,11 @@ class WardrobeState {
 
 // ViewModel (Notifier)
 class WardrobeViewModel extends Notifier<WardrobeState> {
+  late final ClothingRepository _repository;
+
   @override
   WardrobeState build() {
+    _repository = ref.watch(clothingRepositoryProvider);
     // Perform initial load asynchronously
     Future.microtask(() => loadItems());
     return WardrobeState(isLoading: true);
@@ -60,19 +64,8 @@ class WardrobeViewModel extends Notifier<WardrobeState> {
   Future<void> loadItems() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      // Simulate API or Database fetch
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      // Initial mock data
-      final mockData = [
-        const ClothingItem(id: '1', name: 'Beyaz Tişört', category: 'Üst', color: 'Beyaz', usageCount: 5),
-        const ClothingItem(id: '2', name: 'Mavi Kot Pantolon', category: 'Alt', color: 'Mavi', usageCount: 8),
-        const ClothingItem(id: '3', name: 'Bej Trençkot', category: 'Dış giyim', color: 'Bej', usageCount: 2),
-        const ClothingItem(id: '4', name: 'Siyah Spor Ayakkabı', category: 'Ayakkabı', color: 'Siyah', usageCount: 10),
-        const ClothingItem(id: '5', name: 'Altın Renkli Saat', category: 'Aksesuar', color: 'Altın', usageCount: 3),
-      ];
-
-      state = state.copyWith(isLoading: false, items: mockData);
+      final remoteItems = await _repository.getClothingItems();
+      state = state.copyWith(isLoading: false, items: remoteItems);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -82,9 +75,17 @@ class WardrobeViewModel extends Notifier<WardrobeState> {
     state = state.copyWith(selectedCategory: category);
   }
 
-  // Example functionality for adding an item
-  void addItem(ClothingItem item) {
-    state = state.copyWith(items: [...state.items, item]);
+  Future<void> addItem(ClothingItem item) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final newItem = await _repository.createClothingItem(item);
+      state = state.copyWith(
+        isLoading: false, 
+        items: [...state.items, newItem]
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 }
 
@@ -92,3 +93,4 @@ class WardrobeViewModel extends Notifier<WardrobeState> {
 final wardrobeViewModelProvider = NotifierProvider<WardrobeViewModel, WardrobeState>(() {
   return WardrobeViewModel();
 });
+

@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:gircik/features/style_calendar/viewmodel/style_calendar_viewmodel.dart';
 
+import '../../../data/models/calendar_event.dart';
+
 class StyleCalendarScreen extends ConsumerStatefulWidget {
   const StyleCalendarScreen({super.key});
 
@@ -279,6 +281,8 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
   }
 
   void _showAddEventDialog(BuildContext context) {
+    final textController = TextEditingController();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -305,6 +309,7 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: textController,
                 decoration: const InputDecoration(
                   hintText: 'Örn: Doğum Günü Yemeği - Kırmızı Elbise',
                   labelText: 'Etkinlik Notu',
@@ -316,10 +321,21 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Not eklendi!')),
-                    );
+                    final title = textController.text.trim();
+                    if (title.isNotEmpty) {
+                      final selectedDay = ref.read(styleCalendarViewModelProvider).selectedDay ?? DateTime.now();
+                      final event = CalendarEvent(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        date: selectedDay,
+                        title: title,
+                      );
+                      ref.read(styleCalendarViewModelProvider.notifier).addEvent(event);
+                      
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Not eklendi!')),
+                      );
+                    }
                   },
                   child: const Text('Kaydet'),
                 ),

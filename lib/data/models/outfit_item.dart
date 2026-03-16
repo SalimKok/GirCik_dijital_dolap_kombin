@@ -44,4 +44,32 @@ class OutfitItem {
       items: items ?? this.items,
     );
   }
+
+  factory OutfitItem.fromJson(Map<String, dynamic> json) {
+    return OutfitItem(
+      id: json['id'].toString(),
+      title: json['title'] as String,
+      style: json['style'] as String,
+      season: json['season'] as String,
+      isFavorite: json['is_favorite'] as bool? ?? false,
+      items: (json['items'] as List<dynamic>?)?.map((item) {
+        // Map backend strings to IconData if needed, or default
+        return OutfitItemData(
+          name: item['name'] as String? ?? 'Item',
+          icon: Icons.checkroom, 
+        );
+      }).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'style': style,
+      'season': season,
+      'is_favorite': isFavorite,
+      'items': items.map((i) => {'name': i.name}).toList(),
+    };
+  }
 }

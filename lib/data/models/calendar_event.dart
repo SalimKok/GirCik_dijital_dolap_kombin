@@ -20,4 +20,20 @@ class CalendarEvent {
       title: title ?? this.title,
     );
   }
+
+  factory CalendarEvent.fromJson(Map<String, dynamic> json) {
+    return CalendarEvent(
+      id: json['id'].toString(),
+      date: DateTime.parse(json['date'] as String),
+      title: json['title'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'date': date.toIso8601String(),
+      'title': title,
+    };
+  }
 }

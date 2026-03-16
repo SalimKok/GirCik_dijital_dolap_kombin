@@ -81,4 +81,32 @@ class Subscription {
       calendarEventCount: calendarEventCount ?? this.calendarEventCount,
     );
   }
+
+  factory Subscription.fromJson(Map<String, dynamic> json) {
+    SubscriptionPlan parsedPlan = SubscriptionPlan.free;
+    if (json['plan'] == 'monthly') parsedPlan = SubscriptionPlan.monthly;
+    if (json['plan'] == 'yearly') parsedPlan = SubscriptionPlan.yearly;
+
+    return Subscription(
+      plan: parsedPlan,
+      clothingItemCount: json['used_clothing_count'] as int? ?? 0,
+      outfitCount: json['used_outfit_count'] as int? ?? 0,
+      aiUsagesToday: json['used_ai_count'] as int? ?? 0,
+      calendarEventCount: json['used_calendar_count'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    String planStr = 'free';
+    if (plan == SubscriptionPlan.monthly) planStr = 'monthly';
+    if (plan == SubscriptionPlan.yearly) planStr = 'yearly';
+
+    return {
+      'plan': planStr,
+      'used_clothing_count': clothingItemCount,
+      'used_outfit_count': outfitCount,
+      'used_ai_count': aiUsagesToday,
+      'used_calendar_count': calendarEventCount,
+    };
+  }
 }

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gircik/data/models/laundry_item.dart';
+import 'package:gircik/features/laundry/repository/laundry_repository.dart';
 
 // ViewModel State
 class LaundryState {
@@ -38,8 +38,11 @@ class LaundryState {
 
 // ViewModel (Notifier)
 class LaundryViewModel extends Notifier<LaundryState> {
+  late final LaundryRepository _repository;
+
   @override
   LaundryState build() {
+    _repository = ref.watch(laundryRepositoryProvider);
     Future.microtask(() => loadItems());
     return LaundryState(isLoading: true);
   }
@@ -47,71 +50,51 @@ class LaundryViewModel extends Notifier<LaundryState> {
   Future<void> loadItems() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-
-      final mockData = [
-        const LaundryItem(
-          id: '1', name: 'Beyaz Keten Gömlek', category: 'Üst Giyim',
-          wearCount: 3, maxWear: 3, icon: Icons.dry_cleaning_rounded,
-          status: LaundryStatus.needsWash,
-        ),
-        const LaundryItem(
-          id: '2', name: 'Siyah Kot Pantolon', category: 'Alt Giyim',
-          wearCount: 5, maxWear: 5, icon: Icons.airline_seat_legroom_normal_rounded,
-          status: LaundryStatus.needsWash,
-        ),
-        const LaundryItem(
-          id: '3', name: 'Spor Tişört', category: 'Üst Giyim',
-          wearCount: 1, maxWear: 1, icon: Icons.dry_cleaning_rounded,
-          status: LaundryStatus.washing,
-        ),
-        const LaundryItem(
-          id: '4', name: 'Açık Mavi Gömlek', category: 'Üst Giyim',
-          wearCount: 0, maxWear: 3, icon: Icons.dry_cleaning_rounded,
-          status: LaundryStatus.clean,
-        ),
-        const LaundryItem(
-          id: '5', name: 'Gri Eşofman', category: 'Alt Giyim',
-          wearCount: 0, maxWear: 2, icon: Icons.airline_seat_legroom_normal_rounded,
-          status: LaundryStatus.clean,
-        ),
-        const LaundryItem(
-          id: '6', name: 'Bordo Kazak', category: 'Üst Giyim',
-          wearCount: 1, maxWear: 4, icon: Icons.dry_cleaning_rounded,
-          status: LaundryStatus.clean,
-        ),
-      ];
-
-      state = state.copyWith(isLoading: false, items: mockData);
+      final remoteItems = await _repository.getLaundryItems();
+      state = state.copyWith(isLoading: false, items: remoteItems);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  void moveToWashing(String id) {
+  Future<void> _updateItemStatus(String id, String newStatusStr, LaundryStatus localStatus, {int? newWearCount}) async {
+    // Optimistic UI update
+    final initialItems = state.items;
     final updated = state.items.map((item) {
-      if (item.id == id) return item.copyWith(status: LaundryStatus.washing);
+      if (item.id == id) {
+        return item.copyWith(
+          status: localStatus,
+          wearCount: newWearCount ?? item.wearCount,
+        );
+      }
       return item;
     }).toList();
     state = state.copyWith(items: updated);
+
+    try {
+      // API Call
+      await _repository.updateStatus(id, newStatusStr);
+    } catch (e) {
+      // Revert
+      state = state.copyWith(items: initialItems, error: e.toString());
+    }
+  }
+
+  void moveToWashing(String id) {
+    _updateItemStatus(id, 'washing', LaundryStatus.washing);
   }
 
   void moveToClean(String id) {
-    final updated = state.items.map((item) {
-      if (item.id == id) return item.copyWith(status: LaundryStatus.clean, wearCount: 0);
-      return item;
-    }).toList();
-    state = state.copyWith(items: updated);
+    _updateItemStatus(id, 'clean', LaundryStatus.clean, newWearCount: 0);
   }
 
   void moveToNeedsWash(String id) {
-    final updated = state.items.map((item) {
-      if (item.id == id) return item.copyWith(status: LaundryStatus.needsWash, wearCount: item.maxWear);
-      return item;
-    }).toList();
-    state = state.copyWith(items: updated);
+    // Determine maxWear locally for optimistic update, though backend has its own logic
+    final item = state.items.firstWhere((i) => i.id == id);
+    _updateItemStatus(id, 'needs_wash', LaundryStatus.needsWash, newWearCount: item.maxWear);
   }
 }
+
 
 // Global Provider
 final laundryViewModelProvider = NotifierProvider<LaundryViewModel, LaundryState>(() {

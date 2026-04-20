@@ -21,6 +21,7 @@ async def create_clothing_item(db: AsyncSession, item_in: ClothingItemCreate, us
         name=item_in.name,
         category=item_in.category,
         color=item_in.color,
+        season=item_in.season,
         image_url=item_in.image_url
     )
     db.add(db_item)

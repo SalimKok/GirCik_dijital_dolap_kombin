@@ -53,6 +53,24 @@ class ClothingRepository {
     }
   }
 
+  Future<Map<String, dynamic>> analyzeClothingImage(String imagePath) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(imagePath),
+      });
+      final response = await _apiClient.client.post(
+        '/clothing/analyze',
+        data: formData,
+        options: Options(
+          receiveTimeout: const Duration(seconds: 45), // AI process might take longer
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Kıyafet analizi başarısız: \${_handleError(e)}');
+    }
+  }
+
   String _handleError(dynamic error) {
     if (error is DioException) {
       if (error.response?.data != null && error.response?.data['detail'] != null) {

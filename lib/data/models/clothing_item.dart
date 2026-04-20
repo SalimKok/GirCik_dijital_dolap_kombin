@@ -5,6 +5,7 @@ class ClothingItem {
   final String name;
   final String category;
   final String color;
+  final String season;
   final int usageCount;
   final String? imageUrl;
 
@@ -13,6 +14,7 @@ class ClothingItem {
     required this.name,
     required this.category,
     required this.color,
+    this.season = 'Mevsimlik',
     this.usageCount = 0,
     this.imageUrl,
   });
@@ -22,6 +24,7 @@ class ClothingItem {
     String? name,
     String? category,
     String? color,
+    String? season,
     int? usageCount,
     String? imageUrl,
   }) {
@@ -30,6 +33,7 @@ class ClothingItem {
       name: name ?? this.name,
       category: category ?? this.category,
       color: color ?? this.color,
+      season: season ?? this.season,
       usageCount: usageCount ?? this.usageCount,
       imageUrl: imageUrl ?? this.imageUrl,
     );
@@ -41,6 +45,7 @@ class ClothingItem {
       name: json['name'] as String,
       category: json['category'] as String,
       color: json['color'] as String,
+      season: json['season'] as String? ?? 'Mevsimlik',
       usageCount: json['usage_count'] as int? ?? 0,
       imageUrl: json['image_url'] as String?,
     );
@@ -52,6 +57,7 @@ class ClothingItem {
       'name': name,
       'category': category,
       'color': color,
+      'season': season,
       'usage_count': usageCount,
       'image_url': imageUrl,
     };

@@ -13,6 +13,7 @@ class ClothingItem(Base):
     category: Mapped[str] = mapped_column(String(50), nullable=False)
     color: Mapped[str] = mapped_column(String(50), nullable=False)
     image_url: Mapped[str] = mapped_column(String(255), nullable=True)
+    season: Mapped[str] = mapped_column(String(50), nullable=True)
     usage_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

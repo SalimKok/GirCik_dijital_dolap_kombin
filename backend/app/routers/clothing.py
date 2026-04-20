@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.schemas.clothing import ClothingItem, ClothingItemCreate, ClothingItemUpdate
 from app.schemas.user import User
-from app.services import clothing_service
+from app.services import clothing_service, vision_service
 from app.utils.deps import get_current_user
 
 router = APIRouter()
@@ -20,6 +20,34 @@ async def read_clothing_items(
     """Retrieve all clothing items for current user."""
     items = await clothing_service.get_clothing_items(db, user_id=current_user.id)
     return items
+
+@router.post("/analyze", response_model=dict)
+async def analyze_clothing_image(
+    file: UploadFile = File(...),
+    current_user: Annotated[User, Depends(get_current_user)] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Remove background, analyze with AI, and save image."""
+    data = await file.read()
+    
+    # 1. Background removal
+    clean_data = vision_service.remove_background(data)
+    
+    # 2. AI Analysis
+    ai_result = vision_service.analyze_clothing(clean_data)
+    
+    # 3. Save to DB
+    image_id = uuid.uuid4().hex
+    mime_type = "image/png" # rembg outputs png typically
+    from app.models.clothing_item import ClothingImage
+    db_image = ClothingImage(id=image_id, data=clean_data, mime_type=mime_type)
+    db.add(db_image)
+    await db.commit()
+    
+    return {
+        "url": f"/api/clothing/image/{image_id}",
+        "analysis": ai_result
+    }
 
 @router.post("/upload", response_model=dict)
 async def upload_clothing_image(

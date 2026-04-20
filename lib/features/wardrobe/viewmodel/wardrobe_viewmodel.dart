@@ -78,8 +78,9 @@ class WardrobeViewModel extends Notifier<WardrobeState> {
   Future<void> addItem(ClothingItem item, {String? imagePath}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      String? imageUrl;
-      if (imagePath != null && imagePath.isNotEmpty) {
+      String? imageUrl = item.imageUrl;
+      // Sadece resim yolu verilmişse ve imageUrl henüz yoksa yükle.
+      if (imagePath != null && imagePath.isNotEmpty && imageUrl == null) {
         imageUrl = await _repository.uploadClothingImage(imagePath);
       }
       
@@ -100,4 +101,3 @@ class WardrobeViewModel extends Notifier<WardrobeState> {
 final wardrobeViewModelProvider = NotifierProvider<WardrobeViewModel, WardrobeState>(() {
   return WardrobeViewModel();
 });
-

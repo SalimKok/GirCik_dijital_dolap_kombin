@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'package:gircik/data/models/clothing_item.dart';
 import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
+import 'package:gircik/features/wardrobe/repository/clothing_repository.dart';
+import 'package:gircik/core/constants/api_constants.dart';
 
 class ClothingCaptureScreen extends ConsumerStatefulWidget {
   const ClothingCaptureScreen({super.key});
@@ -21,9 +23,14 @@ class _ClothingCaptureScreenState extends ConsumerState<ClothingCaptureScreen> {
   String? _selectedCategory = 'Üst';
   final List<String> _categories = ['Üst', 'Alt', 'Dış giyim', 'Ayakkabı', 'Aksesuar'];
   
+  String? _selectedSeason = 'Mevsimlik';
+  final List<String> _seasons = ['Yazlık', 'Kışlık', 'Mevsimlik'];
+  
   File? _imageFile;
+  String? _processedImageUrl; // DB url of the clean image
   final ImagePicker _picker = ImagePicker();
   
+  bool _isAnalyzing = false;
   bool _isSaving = false;
 
   Future<void> _pickImage(ImageSource source) async {
@@ -32,13 +39,58 @@ class _ClothingCaptureScreenState extends ConsumerState<ClothingCaptureScreen> {
       if (pickedFile != null) {
         setState(() {
           _imageFile = File(pickedFile.path);
+          _processedImageUrl = null;
+        });
+        await _analyzeAndAutoFill(pickedFile.path);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fotoğraf seçilirken bir hata oluştu.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _analyzeAndAutoFill(String path) async {
+    setState(() {
+      _isAnalyzing = true;
+    });
+
+    try {
+      final result = await ref.read(clothingRepositoryProvider).analyzeClothingImage(path);
+      // Expected result: {"url": "...", "analysis": {"category": "...", "color": "...", "season": "...", "name": "..."}}
+      
+      final url = result['url'] as String?;
+      final analysis = result['analysis'] as Map<String, dynamic>?;
+
+      if (mounted) {
+        setState(() {
+          _processedImageUrl = url;
+          if (analysis != null) {
+            _nameController.text = analysis['name'] ?? '';
+            _colorController.text = analysis['color'] ?? '';
+            
+            final detectedCat = analysis['category'];
+            if (detectedCat != null && _categories.contains(detectedCat)) {
+              _selectedCategory = detectedCat;
+            }
+            
+            final detectedSeason = analysis['season'];
+            if (detectedSeason != null && _seasons.contains(detectedSeason)) {
+              _selectedSeason = detectedSeason;
+            }
+          }
+          _isAnalyzing = false;
         });
       }
     } catch (e) {
-      // Handle camera/gallery permission errors gracefully
       if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fotoğraf eklenirken bir hata oluştu. İzinleri kontrol edin.')),
+          SnackBar(content: Text('Yapay Zeka Analiz Hatası: $e')),
         );
       }
     }
@@ -59,11 +111,14 @@ class _ClothingCaptureScreenState extends ConsumerState<ClothingCaptureScreen> {
         name: _nameController.text.trim(),
         category: _selectedCategory ?? 'Üst',
         color: _colorController.text.trim(),
+        season: _selectedSeason ?? 'Mevsimlik',
+        imageUrl: _processedImageUrl, // Already uploaded and background removed
       );
 
+      // If we don't have a processed image url, fallback to standard upload flow using local path.
       await ref.read(wardrobeViewModelProvider.notifier).addItem(
         newItem, 
-        imagePath: _imageFile?.path,
+        imagePath: _processedImageUrl == null ? _imageFile?.path : null, 
       );
 
       if (mounted) {
@@ -94,12 +149,30 @@ class _ClothingCaptureScreenState extends ConsumerState<ClothingCaptureScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    final String? fullProcessedUrl = _processedImageUrl != null && _processedImageUrl!.isNotEmpty
+        ? '${ApiConstants.baseUrl.replaceAll(RegExp(r'/api$'), '')}$_processedImageUrl'
+        : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Yeni Kıyafet Ekle'),
       ),
-      body: _isSaving 
-        ? const Center(child: CircularProgressIndicator())
+      body: _isSaving || _isAnalyzing
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  _isAnalyzing ? 'Yapay zeka inceliyor...\nArka plan siliniyor...' : 'Kaydediliyor...',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary),
+                ),
+              ],
+            ),
+          )
         : SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Form(
@@ -141,12 +214,17 @@ class _ClothingCaptureScreenState extends ConsumerState<ClothingCaptureScreen> {
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
-                        image: _imageFile != null 
+                        image: fullProcessedUrl != null
                             ? DecorationImage(
-                                image: FileImage(_imageFile!), 
-                                fit: BoxFit.cover,
+                                image: NetworkImage(fullProcessedUrl),
+                                fit: BoxFit.contain, // Show whole clean item
                               )
-                            : null,
+                            : (_imageFile != null 
+                                ? DecorationImage(
+                                    image: FileImage(_imageFile!), 
+                                    fit: BoxFit.cover,
+                                  )
+                                : null),
                       ),
                       child: _imageFile == null 
                           ? Column(
@@ -183,6 +261,23 @@ class _ClothingCaptureScreenState extends ConsumerState<ClothingCaptureScreen> {
                     onChanged: (val) {
                       setState(() {
                         _selectedCategory = val;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedSeason,
+                    decoration: const InputDecoration(
+                      labelText: 'Mevsim',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _seasons.map((s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(s),
+                    )).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedSeason = val;
                       });
                     },
                   ),

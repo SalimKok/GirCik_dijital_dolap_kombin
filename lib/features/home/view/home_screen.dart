@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gircik/features/home/viewmodel/home_viewmodel.dart';
+import 'package:gircik/features/laundry/viewmodel/laundry_viewmodel.dart';
+import 'package:gircik/features/style_calendar/viewmodel/style_calendar_viewmodel.dart';
+import 'package:gircik/features/outfits/viewmodel/outfits_viewmodel.dart';
+import 'package:gircik/data/models/outfit_item.dart';
+import 'package:gircik/data/models/calendar_event.dart';
+import 'package:gircik/core/providers/navigation_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -8,6 +14,31 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final homeState = ref.watch(homeViewModelProvider);
+    final laundryState = ref.watch(laundryViewModelProvider);
+    final calendarState = ref.watch(styleCalendarViewModelProvider);
+    final outfitsState = ref.watch(outfitsViewModelProvider);
+
+    final laundryCount = laundryState.needsWashItems.length;
+
+    final now = DateTime.now();
+    final upcomingEvents = calendarState.events.where((e) => e.date.isAfter(now)).toList();
+    upcomingEvents.sort((a, b) => a.date.compareTo(b.date));
+    final nextEvent = upcomingEvents.isNotEmpty ? upcomingEvents.first : null;
+
+    String nextEventTitle = nextEvent?.title ?? 'Yaklaşan etkinlik yok';
+    String nextEventTime = '';
+    if (nextEvent != null) {
+      final diff = nextEvent.date.difference(now);
+      if (diff.inDays == 0) {
+        nextEventTime = 'Bugün:';
+      } else if (diff.inDays == 1) {
+        nextEventTime = 'Yarın:';
+      } else {
+        nextEventTime = '${diff.inDays} gün sonra:';
+      }
+    }
+
+    final favoriteOutfits = outfitsState.outfits.where((o) => o.isFavorite).toList();
 
     return Scaffold(
       body: homeState.isLoading
@@ -24,14 +55,16 @@ class HomeScreen extends ConsumerWidget {
                         const SizedBox(height: 12),
                         _buildUpcomingInfo(
                           context,
-                          homeState.laundryCount,
-                          homeState.nextEventTitle,
-                          homeState.nextEventTime,
+                          ref,
+                          laundryCount,
+                          nextEventTitle,
+                          nextEventTime,
+                          nextEvent,
                         ),
                   const SizedBox(height: 28),
                   _buildSectionTitle(context, 'Favori Kombinler'),
                   const SizedBox(height: 12),
-                  _buildFavoriteOutfits(context),
+                  _buildFavoriteOutfits(context, favoriteOutfits),
                   const SizedBox(height: 28),
                   _buildSectionTitle(context, 'Bugün'),
                   const SizedBox(height: 12),
@@ -79,9 +112,11 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildUpcomingInfo(
     BuildContext context,
+    WidgetRef ref,
     int laundryCount,
     String nextEventTitle,
     String nextEventTime,
+    CalendarEvent? nextEvent,
   ) {
     return Column(
       children: [
@@ -92,7 +127,10 @@ class HomeScreen extends ConsumerWidget {
             ? '$laundryCount kıyafetin yıkanma vakti geldi.' 
             : 'Yıkanacak kıyafet yok.',
           color: Colors.blue,
-          onTap: () {},
+          onTap: () {
+            // Hijyen sekmesi index 4
+            ref.read(mainNavIndexProvider.notifier).navigate(4);
+          },
         ),
         const SizedBox(height: 12),
         _InfoCard(
@@ -100,21 +138,39 @@ class HomeScreen extends ConsumerWidget {
           title: 'Yaklaşan Etkinlik',
           subtitle: '$nextEventTime $nextEventTitle',
           color: Colors.orange,
-          onTap: () {},
+          onTap: nextEvent != null ? () {
+            // Takvim sekmesi index 3, ilgili günü seç
+            ref.read(styleCalendarViewModelProvider.notifier)
+                .selectDay(nextEvent.date, nextEvent.date);
+            ref.read(mainNavIndexProvider.notifier).navigate(3);
+          } : () {},
         ),
       ],
     );
   }
 
-  Widget _buildFavoriteOutfits(BuildContext context) {
+  Widget _buildFavoriteOutfits(BuildContext context, List<OutfitItem> favorites) {
     final theme = Theme.of(context);
+    if (favorites.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Text(
+            'Henüz favori kombininiz yok.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       height: 180,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: 3,
+        itemCount: favorites.length,
         separatorBuilder: (context, index) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
+          final outfit = favorites[index];
           return Container(
             width: 140,
             decoration: BoxDecoration(
@@ -151,13 +207,13 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Kombin ${index + 1}',
+                        outfit.title,
                         style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Casual',
+                        outfit.style,
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ],

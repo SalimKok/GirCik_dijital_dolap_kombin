@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gircik/data/models/laundry_item.dart';
 import 'package:gircik/features/laundry/repository/laundry_repository.dart';
+import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
 
 // ViewModel State
 class LaundryState {
@@ -109,6 +110,7 @@ class LaundryViewModel extends Notifier<LaundryState> {
 
     try {
       await _repository.incrementWear(id);
+      ref.read(wardrobeViewModelProvider.notifier).loadItems();
     } catch (e) {
       state = state.copyWith(items: initialItems, error: e.toString());
     }

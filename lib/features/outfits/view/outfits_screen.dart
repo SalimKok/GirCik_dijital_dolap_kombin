@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gircik/features/outfits/view/outfit_recommendation_screen.dart';
 import 'package:gircik/features/outfits/viewmodel/outfits_viewmodel.dart';
 import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
+import 'package:gircik/features/laundry/viewmodel/laundry_viewmodel.dart';
 import 'package:gircik/data/models/outfit_item.dart';
 import 'package:gircik/core/constants/api_constants.dart';
 
@@ -106,11 +107,16 @@ class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTicker
 
   Widget _buildOutfitCard(OutfitItem outfit, ThemeData theme) {
     final wardrobeItems = ref.watch(wardrobeViewModelProvider).items;
+    final laundryState = ref.watch(laundryViewModelProvider);
     
     // Kombin parçalarını eşleştirip resimlerini bulalım
     final matchedClothes = outfit.items.map((outfitItem) {
         return wardrobeItems.where((w) => w.id == outfitItem.clothingItemId).firstOrNull;
     }).where((item) => item != null).toList();
+
+    // Kirli kıyafetleri bulalım
+    final dirtyItemIds = laundryState.needsWashItems.map((i) => i.clothingItemId).toSet();
+    final hasDirtyItem = matchedClothes.any((cloth) => dirtyItemIds.contains(cloth!.id));
 
     return Card(
       elevation: 0,
@@ -143,6 +149,25 @@ class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTicker
                       Wrap(
                         spacing: 8,
                         children: [
+                          if (hasDirtyItem)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.error,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.water_drop_rounded, size: 12, color: Colors.white),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Kirli',
+                                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
                           _buildTag(outfit.style, theme.colorScheme.primary),
                           _buildTag(outfit.season, theme.colorScheme.secondary),
                         ],

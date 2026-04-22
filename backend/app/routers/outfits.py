@@ -112,10 +112,12 @@ async def wear_outfit(
     if not outfit:
         raise HTTPException(status_code=404, detail="Outfit not found")
     
-    from app.services import laundry_service
+    from app.services import laundry_service, clothing_service
+    from app.schemas.clothing import ClothingItemUpdate
     
     results = []
     for item_link in outfit.items:
+        # Increment laundry wear count
         laundry_item = await laundry_service.get_laundry_item_by_clothing(
             db, clothing_item_id=item_link.clothing_item_id, user_id=current_user.id
         )
@@ -126,7 +128,17 @@ async def wear_outfit(
                 update_data.status = "needsWash"
                 update_data.wear_count = laundry_item.max_wear
             await laundry_service.update_laundry_item(db, db_item=laundry_item, item_update=update_data)
-            results.append({"clothing_item_id": item_link.clothing_item_id, "new_wear_count": new_wear})
+            
+        # Increment clothing overall usage_count
+        clothing = await clothing_service.get_clothing_item(db, item_id=item_link.clothing_item_id, user_id=current_user.id)
+        if clothing:
+            await clothing_service.update_clothing_item(
+                db, 
+                db_item=clothing, 
+                item_update=ClothingItemUpdate(usage_count=clothing.usage_count + 1)
+            )
+            
+        results.append({"clothing_item_id": item_link.clothing_item_id, "new_wear_count": new_wear if laundry_item else None})
     
     return {"message": "Kombin giyildi!", "updated_items": results}
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gircik/features/wardrobe/view/clothing_capture_screen.dart';
 import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
+import 'package:gircik/features/laundry/viewmodel/laundry_viewmodel.dart';
 import 'package:gircik/data/models/clothing_item.dart';
 import 'package:gircik/core/constants/api_constants.dart';
 
@@ -32,7 +33,12 @@ class WardrobeScreen extends ConsumerWidget {
                         childAspectRatio: 0.78,
                       ),
                       itemBuilder: (context, index) {
-                        return _WardrobeCard(item: wardrobeState.filteredItems[index]);
+                        final item = wardrobeState.filteredItems[index];
+                        final laundryState = ref.watch(laundryViewModelProvider);
+                        final dirtyItemIds = laundryState.needsWashItems.map((i) => i.clothingItemId).toSet();
+                        final isDirty = dirtyItemIds.contains(item.id);
+                        
+                        return _WardrobeCard(item: item, isDirty: isDirty);
                       },
                     ),
                   ),
@@ -171,9 +177,10 @@ class WardrobeScreen extends ConsumerWidget {
 }
 
 class _WardrobeCard extends StatelessWidget {
-  const _WardrobeCard({required this.item});
+  const _WardrobeCard({required this.item, this.isDirty = false});
 
   final ClothingItem item;
+  final bool isDirty;
 
   @override
   Widget build(BuildContext context) {
@@ -210,16 +217,36 @@ class _WardrobeCard extends StatelessWidget {
                     color: theme.colorScheme.primary.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: fullImageUrl != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            fullImageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(theme),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      fullImageUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                fullImageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(theme),
+                              ),
+                            )
+                          : _buildFallbackIcon(theme),
+                      
+                      // Dirty Badge
+                      if (isDirty)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.error,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.water_drop_rounded, size: 16, color: Colors.white),
                           ),
-                        )
-                      : _buildFallbackIcon(theme),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),

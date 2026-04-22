@@ -7,6 +7,7 @@ import 'package:gircik/features/style_calendar/view/style_calendar_screen.dart';
 import 'package:gircik/features/laundry/view/laundry_screen.dart';
 import 'package:gircik/features/settings/view/settings_screen.dart';
 import 'package:gircik/features/subscription/viewmodel/subscription_viewmodel.dart';
+import 'package:gircik/core/providers/navigation_provider.dart';
 
 class MainLayoutScreen extends ConsumerStatefulWidget {
   const MainLayoutScreen({super.key});
@@ -38,11 +39,17 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final subscription = ref.watch(subscriptionProvider);
-    final isHome = _currentIndex == 0;
+    final currentIndex = ref.watch(mainNavIndexProvider);
+    final isHome = currentIndex == 0;
+
+    // Sync external changes to local state
+    if (_currentIndex != currentIndex) {
+      _currentIndex = currentIndex;
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
+        title: Text(_titles[currentIndex]),
         leading: isHome
             ? Center(
                 child: GestureDetector(
@@ -100,15 +107,16 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
         ],
       ),
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: currentIndex,
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
           });
+          ref.read(mainNavIndexProvider.notifier).navigate(index);
         },
         destinations: const [
           NavigationDestination(

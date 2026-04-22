@@ -87,6 +87,9 @@ async def increment_wear(
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Increment wear count by 1. Auto-sets to 'needsWash' if max_wear is reached."""
+    from app.services import clothing_service
+    from app.schemas.clothing import ClothingItemUpdate
+    
     item = await laundry_service.get_laundry_item(db, item_id=item_id, user_id=current_user.id)
     if not item:
         raise HTTPException(status_code=404, detail="Laundry item not found")
@@ -98,4 +101,15 @@ async def increment_wear(
         update_data.status = "needsWash"
         update_data.wear_count = item.max_wear
         
-    return await laundry_service.update_laundry_item(db, db_item=item, item_update=update_data)
+    updated_laundry = await laundry_service.update_laundry_item(db, db_item=item, item_update=update_data)
+    
+    # Increment global clothing usage count
+    clothing = await clothing_service.get_clothing_item(db, item_id=item.clothing_item_id, user_id=current_user.id)
+    if clothing:
+        await clothing_service.update_clothing_item(
+            db, 
+            db_item=clothing, 
+            item_update=ClothingItemUpdate(usage_count=clothing.usage_count + 1)
+        )
+        
+    return updated_laundry

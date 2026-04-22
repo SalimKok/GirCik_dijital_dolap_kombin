@@ -15,6 +15,7 @@ class LaundryItem {
   final IconData icon;
   final LaundryStatus status;
   final String? imageUrl;
+  final String clothingItemId;
 
   const LaundryItem({
     required this.id,
@@ -25,6 +26,7 @@ class LaundryItem {
     required this.icon,
     required this.status,
     this.imageUrl,
+    required this.clothingItemId,
   });
 
   LaundryItem copyWith({
@@ -36,6 +38,7 @@ class LaundryItem {
     IconData? icon,
     LaundryStatus? status,
     String? imageUrl,
+    String? clothingItemId,
   }) {
     return LaundryItem(
       id: id ?? this.id,
@@ -46,6 +49,7 @@ class LaundryItem {
       icon: icon ?? this.icon,
       status: status ?? this.status,
       imageUrl: imageUrl ?? this.imageUrl,
+      clothingItemId: clothingItemId ?? this.clothingItemId,
     );
   }
 
@@ -77,6 +81,7 @@ class LaundryItem {
       icon: Icons.checkroom,
       status: parsedStatus,
       imageUrl: clothingItem?['image_url'] as String?,
+      clothingItemId: json['clothing_item_id']?.toString() ?? '',
     );
   }
 

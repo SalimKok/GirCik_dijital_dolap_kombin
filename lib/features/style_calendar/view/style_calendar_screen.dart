@@ -4,6 +4,10 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:gircik/features/style_calendar/viewmodel/style_calendar_viewmodel.dart';
+import 'package:gircik/features/outfits/viewmodel/outfits_viewmodel.dart';
+import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
+import 'package:gircik/core/constants/api_constants.dart';
+import 'package:gircik/data/models/outfit_item.dart';
 
 import '../../../data/models/calendar_event.dart';
 
@@ -182,7 +186,8 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: events.length,
                     itemBuilder: (context, index) {
-                      return _buildEventCard(theme, events[index].title);
+                      final event = events[index] as CalendarEvent;
+                      return _buildEventCard(theme, event);
                     },
                   ),
           ),
@@ -191,7 +196,30 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
     );
   }
 
-  Widget _buildEventCard(ThemeData theme, String eventText) {
+  Widget _buildEventCard(ThemeData theme, CalendarEvent event) {
+    final outfitsState = ref.watch(outfitsViewModelProvider);
+    final wardrobeItems = ref.watch(wardrobeViewModelProvider).items;
+
+    // Find matched outfit
+    OutfitItem? linkedOutfit;
+    if (event.outfitId != null) {
+      linkedOutfit = outfitsState.outfits.where((o) => o.id == event.outfitId).firstOrNull;
+    }
+
+    // Get clothing images for the outfit
+    List<String> outfitImageUrls = [];
+    if (linkedOutfit != null) {
+      for (final outfitPiece in linkedOutfit.items) {
+        final cloth = wardrobeItems.where((w) => w.id == outfitPiece.clothingItemId).firstOrNull;
+        if (cloth?.imageUrl != null && cloth!.imageUrl!.isNotEmpty) {
+          final url = cloth.imageUrl!.startsWith('http')
+              ? cloth.imageUrl!
+              : '${ApiConstants.baseUrl.replaceAll('/api', '')}${cloth.imageUrl}';
+          outfitImageUrls.add(url);
+        }
+      }
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -200,52 +228,84 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
           color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    linkedOutfit != null ? Icons.checkroom_rounded : Icons.event_note_rounded,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        linkedOutfit != null ? linkedOutfit.title : 'Kombin seçilmedi',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: linkedOutfit != null
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                          fontWeight: linkedOutfit != null ? FontWeight.w500 : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Show outfit images if available
+          if (outfitImageUrls.isNotEmpty)
             Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.checkroom_rounded,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    eventText,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+              height: 72,
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: outfitImageUrls.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: 56,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Planlanmış Kombin',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.network(
+                      outfitImageUrls[index],
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.checkroom_rounded,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                      ),
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-            IconButton(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              onPressed: () {},
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -282,6 +342,7 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
 
   void _showAddEventDialog(BuildContext context) {
     final textController = TextEditingController();
+    String? selectedOutfitId;
 
     showModalBottomSheet(
       context: context,
@@ -289,60 +350,180 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 24,
-            right: 24,
-            top: 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Yeni Plan Ekle',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final outfits = ref.read(outfitsViewModelProvider).outfits;
+            final wardrobeItems = ref.read(wardrobeViewModelProvider).items;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: textController,
-                decoration: const InputDecoration(
-                  hintText: 'Örn: Doğum Günü Yemeği - Kırmızı Elbise',
-                  labelText: 'Etkinlik Notu',
-                ),
-                autofocus: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Yeni Plan Ekle',
+                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: textController,
+                    decoration: const InputDecoration(
+                      hintText: 'Örn: Doğum Günü Yemeği',
+                      labelText: 'Etkinlik Notu',
+                    ),
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Outfit selection
+                  Text(
+                    'Kombin Seç (İsteğe Bağlı)',
+                    style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 110,
+                    child: outfits.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Henüz kombininiz yok.',
+                              style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: outfits.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 12),
+                            itemBuilder: (ctx2, index) {
+                              final outfit = outfits[index];
+                              final isSelected = selectedOutfitId == outfit.id;
+
+                              // Get first clothing image for preview
+                              String? previewUrl;
+                              if (outfit.items.isNotEmpty) {
+                                final firstCloth = wardrobeItems
+                                    .where((w) => w.id == outfit.items.first.clothingItemId)
+                                    .firstOrNull;
+                                if (firstCloth?.imageUrl != null && firstCloth!.imageUrl!.isNotEmpty) {
+                                  previewUrl = firstCloth.imageUrl!.startsWith('http')
+                                      ? firstCloth.imageUrl!
+                                      : '${ApiConstants.baseUrl.replaceAll('/api', '')}${firstCloth.imageUrl}';
+                                }
+                              }
+
+                              return GestureDetector(
+                                onTap: () {
+                                  setSheetState(() {
+                                    selectedOutfitId = isSelected ? null : outfit.id;
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  width: 90,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Theme.of(ctx2).colorScheme.primary
+                                          : Theme.of(ctx2).colorScheme.outline.withValues(alpha: 0.2),
+                                      width: isSelected ? 2.5 : 1.5,
+                                    ),
+                                    color: isSelected
+                                        ? Theme.of(ctx2).colorScheme.primary.withValues(alpha: 0.08)
+                                        : Theme.of(ctx2).colorScheme.surfaceContainer,
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Column(
+                                    children: [
+                                      Expanded(
+                                        child: previewUrl != null
+                                            ? Image.network(
+                                                previewUrl,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                                errorBuilder: (_, __, ___) => Icon(
+                                                  Icons.checkroom_rounded,
+                                                  color: Theme.of(ctx2).colorScheme.primary.withValues(alpha: 0.5),
+                                                ),
+                                              )
+                                            : Center(
+                                                child: Icon(
+                                                  Icons.checkroom_rounded,
+                                                  size: 32,
+                                                  color: Theme.of(ctx2).colorScheme.primary.withValues(alpha: 0.5),
+                                                ),
+                                              ),
+                                      ),
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                        color: isSelected
+                                            ? Theme.of(ctx2).colorScheme.primary.withValues(alpha: 0.12)
+                                            : null,
+                                        child: Text(
+                                          outfit.title,
+                                          style: Theme.of(ctx2).textTheme.bodySmall?.copyWith(
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                            fontSize: 11,
+                                            color: isSelected
+                                                ? Theme.of(ctx2).colorScheme.primary
+                                                : null,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {
+                        final title = textController.text.trim();
+                        if (title.isNotEmpty) {
+                          final selectedDay = ref.read(styleCalendarViewModelProvider).selectedDay ?? DateTime.now();
+                          final event = CalendarEvent(
+                            id: DateTime.now().millisecondsSinceEpoch.toString(),
+                            date: selectedDay,
+                            title: title,
+                            outfitId: selectedOutfitId,
+                          );
+                          ref.read(styleCalendarViewModelProvider.notifier).addEvent(event);
+                          
+                          Navigator.pop(sheetContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not eklendi!')),
+                          );
+                        }
+                      },
+                      child: const Text('Kaydet'),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    final title = textController.text.trim();
-                    if (title.isNotEmpty) {
-                      final selectedDay = ref.read(styleCalendarViewModelProvider).selectedDay ?? DateTime.now();
-                      final event = CalendarEvent(
-                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        date: selectedDay,
-                        title: title,
-                      );
-                      ref.read(styleCalendarViewModelProvider.notifier).addEvent(event);
-                      
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Not eklendi!')),
-                      );
-                    }
-                  },
-                  child: const Text('Kaydet'),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            );
+          },
         );
       },
     );

@@ -6,6 +6,7 @@ import 'package:gircik/features/wardrobe/repository/clothing_repository.dart';
 class WardrobeState {
   final bool isLoading;
   final String selectedCategory;
+  final String selectedColor;
   final List<ClothingItem> items;
   final List<String> categories;
   final String? error;
@@ -13,6 +14,7 @@ class WardrobeState {
   WardrobeState({
     this.isLoading = false,
     this.selectedCategory = 'Hepsi',
+    this.selectedColor = 'Hepsi',
     this.items = const [],
     this.categories = const [
       'Hepsi',
@@ -28,6 +30,7 @@ class WardrobeState {
   WardrobeState copyWith({
     bool? isLoading,
     String? selectedCategory,
+    String? selectedColor,
     List<ClothingItem>? items,
     List<String>? categories,
     String? error,
@@ -35,17 +38,28 @@ class WardrobeState {
     return WardrobeState(
       isLoading: isLoading ?? this.isLoading,
       selectedCategory: selectedCategory ?? this.selectedCategory,
+      selectedColor: selectedColor ?? this.selectedColor,
       items: items ?? this.items,
       categories: categories ?? this.categories,
       error: error,
     );
   }
 
+  List<String> get availableColors {
+    final colors = items.map((i) => i.color).where((c) => c.isNotEmpty).toSet().toList();
+    colors.sort();
+    return ['Hepsi', ...colors];
+  }
+
   List<ClothingItem> get filteredItems {
-    if (selectedCategory == 'Hepsi') {
-      return items;
+    var result = items;
+    if (selectedCategory != 'Hepsi') {
+      result = result.where((i) => i.category == selectedCategory).toList();
     }
-    return items.where((i) => i.category == selectedCategory).toList();
+    if (selectedColor != 'Hepsi') {
+      result = result.where((i) => i.color == selectedColor).toList();
+    }
+    return result;
   }
 }
 
@@ -75,6 +89,10 @@ class WardrobeViewModel extends Notifier<WardrobeState> {
     state = state.copyWith(selectedCategory: category);
   }
 
+  void selectColor(String color) {
+    state = state.copyWith(selectedColor: color);
+  }
+
   Future<void> addItem(ClothingItem item, {String? imagePath}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -90,6 +108,34 @@ class WardrobeViewModel extends Notifier<WardrobeState> {
       state = state.copyWith(
         isLoading: false, 
         items: [...state.items, newItem]
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> updateItem(ClothingItem item) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final updatedItem = await _repository.updateClothingItem(item.id, item);
+      final updatedItems = state.items.map((i) => i.id == item.id ? updatedItem : i).toList();
+      state = state.copyWith(
+        isLoading: false,
+        items: updatedItems,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> deleteItem(String id) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _repository.deleteClothingItem(id);
+      final updatedItems = state.items.where((i) => i.id != id).toList();
+      state = state.copyWith(
+        isLoading: false,
+        items: updatedItems,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

@@ -18,9 +18,6 @@ class WardrobeScreen extends ConsumerWidget {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                const SizedBox(height: 8),
-                _buildCategoryChips(theme, ref, wardrobeState),
-                const SizedBox(height: 4),
                 _buildSummaryRow(context, theme, wardrobeState.filteredItems.length),
                 const Divider(height: 1),
                 Expanded(
@@ -56,44 +53,6 @@ class WardrobeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryChips(ThemeData theme, WidgetRef ref, WardrobeState state) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: state.categories.map((c) {
-          final isSelected = c == state.selectedCategory;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(c),
-              selected: isSelected,
-              onSelected: (_) {
-                ref.read(wardrobeViewModelProvider.notifier).selectCategory(c);
-              },
-              selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-              labelStyle: theme.textTheme.bodyMedium?.copyWith(
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
-              side: BorderSide(
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outline.withValues(alpha: 0.7),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              backgroundColor: Colors.white,
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   Widget _buildSummaryRow(BuildContext context, ThemeData theme, int visibleCount) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
@@ -113,24 +72,91 @@ class WardrobeScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 builder: (context) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Filtreler (yakında)',
-                          style: theme.textTheme.titleMedium,
+                  return Consumer(
+                    builder: (context, ref, child) {
+                      final bottomSheetState = ref.watch(wardrobeViewModelProvider);
+                      final sheetTheme = Theme.of(context);
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kategoriler',
+                              style: sheetTheme.textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: bottomSheetState.categories.map((c) {
+                                final isSelected = c == bottomSheetState.selectedCategory;
+                                return ChoiceChip(
+                                  label: Text(c),
+                                  selected: isSelected,
+                                  onSelected: (_) {
+                                    ref.read(wardrobeViewModelProvider.notifier).selectCategory(c);
+                                  },
+                                  selectedColor: sheetTheme.colorScheme.primary.withValues(alpha: 0.15),
+                                  labelStyle: sheetTheme.textTheme.bodyMedium?.copyWith(
+                                    color: isSelected
+                                        ? sheetTheme.colorScheme.primary
+                                        : sheetTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                  ),
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? sheetTheme.colorScheme.primary
+                                        : sheetTheme.colorScheme.outline.withValues(alpha: 0.7),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Renkler',
+                              style: sheetTheme.textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: bottomSheetState.availableColors.map((color) {
+                                final isSelected = color == bottomSheetState.selectedColor;
+                                return ChoiceChip(
+                                  label: Text(color),
+                                  selected: isSelected,
+                                  onSelected: (_) {
+                                    ref.read(wardrobeViewModelProvider.notifier).selectColor(color);
+                                  },
+                                  selectedColor: sheetTheme.colorScheme.primary.withValues(alpha: 0.15),
+                                  labelStyle: sheetTheme.textTheme.bodyMedium?.copyWith(
+                                    color: isSelected
+                                        ? sheetTheme.colorScheme.primary
+                                        : sheetTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                  ),
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? sheetTheme.colorScheme.primary
+                                        : sheetTheme.colorScheme.outline.withValues(alpha: 0.7),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                );
+                              }).toList(),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Şimdilik sadece kategoriye göre filtreleme yapılıyor. '
-                              'İleride renk, mevsim, kullanım sayısı vb. ekleyebiliriz.',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               );
@@ -164,7 +190,11 @@ class _WardrobeCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          // İleride detay ekranı açılabilir
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ClothingCaptureScreen(existingItem: item),
+            ),
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(12),

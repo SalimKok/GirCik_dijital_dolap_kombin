@@ -4,9 +4,11 @@ import 'package:gircik/features/home/viewmodel/home_viewmodel.dart';
 import 'package:gircik/features/laundry/viewmodel/laundry_viewmodel.dart';
 import 'package:gircik/features/style_calendar/viewmodel/style_calendar_viewmodel.dart';
 import 'package:gircik/features/outfits/viewmodel/outfits_viewmodel.dart';
+import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
 import 'package:gircik/data/models/outfit_item.dart';
 import 'package:gircik/data/models/calendar_event.dart';
 import 'package:gircik/core/providers/navigation_provider.dart';
+import 'package:gircik/core/constants/api_constants.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -21,20 +23,27 @@ class HomeScreen extends ConsumerWidget {
     final laundryCount = laundryState.needsWashItems.length;
 
     final now = DateTime.now();
-    final upcomingEvents = calendarState.events.where((e) => e.date.isAfter(now)).toList();
+    // Sadece bugünden sonraki günleri göster (bugün dahil)
+    final today = DateTime(now.year, now.month, now.day);
+    final upcomingEvents = calendarState.events.where((e) {
+      final eventDay = DateTime(e.date.year, e.date.month, e.date.day);
+      return !eventDay.isBefore(today);
+    }).toList();
     upcomingEvents.sort((a, b) => a.date.compareTo(b.date));
     final nextEvent = upcomingEvents.isNotEmpty ? upcomingEvents.first : null;
 
     String nextEventTitle = nextEvent?.title ?? 'Yaklaşan etkinlik yok';
     String nextEventTime = '';
     if (nextEvent != null) {
-      final diff = nextEvent.date.difference(now);
-      if (diff.inDays == 0) {
+      // Takvim günü farkını hesapla (saat bilgisi olmadan)
+      final eventDay = DateTime(nextEvent.date.year, nextEvent.date.month, nextEvent.date.day);
+      final dayDiff = eventDay.difference(today).inDays;
+      if (dayDiff == 0) {
         nextEventTime = 'Bugün:';
-      } else if (diff.inDays == 1) {
+      } else if (dayDiff == 1) {
         nextEventTime = 'Yarın:';
       } else {
-        nextEventTime = '${diff.inDays} gün sonra:';
+        nextEventTime = '$dayDiff gün sonra:';
       }
     }
 
@@ -64,7 +73,7 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 28),
                   _buildSectionTitle(context, 'Favori Kombinler'),
                   const SizedBox(height: 12),
-                  _buildFavoriteOutfits(context, favoriteOutfits),
+                  _buildFavoriteOutfits(context, ref, favoriteOutfits),
                   const SizedBox(height: 28),
                   _buildSectionTitle(context, 'Bugün'),
                   const SizedBox(height: 12),
@@ -149,8 +158,10 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFavoriteOutfits(BuildContext context, List<OutfitItem> favorites) {
+  Widget _buildFavoriteOutfits(BuildContext context, WidgetRef ref, List<OutfitItem> favorites) {
     final theme = Theme.of(context);
+    final wardrobeItems = ref.watch(wardrobeViewModelProvider).items;
+
     if (favorites.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
@@ -164,57 +175,122 @@ class HomeScreen extends ConsumerWidget {
     }
 
     return SizedBox(
-      height: 180,
+      height: 195,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: favorites.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 16),
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
           final outfit = favorites[index];
+
+          // Kombindeki kıyafet resimlerini bul
+          final outfitImages = outfit.items.map((link) {
+            final item = wardrobeItems.where((w) => w.id == link.clothingItemId).firstOrNull;
+            if (item?.imageUrl != null && item!.imageUrl!.isNotEmpty) {
+              return item.imageUrl!.startsWith('http')
+                  ? item.imageUrl!
+                  : '${ApiConstants.baseUrl.replaceAll('/api', '')}${item.imageUrl}';
+            }
+            return null;
+          }).where((url) => url != null).cast<String>().toList();
+
           return Container(
-            width: 140,
+            width: 148,
             decoration: BoxDecoration(
               color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                color: theme.colorScheme.outline.withValues(alpha: 0.12),
               ),
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {},
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Fotoğraf bölümü
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.checkroom_rounded,
-                              size: 40,
-                              color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                            ),
-                          ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: outfitImages.isNotEmpty
+                              ? Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    // Arka plan: ilk kıyafet
+                                    Image.network(
+                                      outfitImages[0],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => _buildOutfitPlaceholder(theme),
+                                    ),
+                                    // Sağ alt köşede mini üst üste fotoğraflar
+                                    if (outfitImages.length > 1)
+                                      Positioned(
+                                        bottom: 6,
+                                        right: 6,
+                                        child: Row(
+                                          children: outfitImages
+                                              .skip(1)
+                                              .take(2)
+                                              .map(
+                                                (url) => Container(
+                                                  margin: const EdgeInsets.only(left: 4),
+                                                  width: 30,
+                                                  height: 36,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: Colors.white, width: 1.5),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black.withValues(alpha: 0.2),
+                                                        blurRadius: 4,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: ClipRRect(
+                                                    borderRadius: BorderRadius.circular(5),
+                                                    child: Image.network(url, fit: BoxFit.cover),
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(),
+                                        ),
+                                      ),
+                                    // Favori ikonlu üst sol rozet
+                                    Positioned(
+                                      top: 6,
+                                      left: 6,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.shade500,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.favorite_rounded, size: 12, color: Colors.white),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : _buildOutfitPlaceholder(theme),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         outfit.title,
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 13),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         outfit.style,
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -223,6 +299,19 @@ class HomeScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildOutfitPlaceholder(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Icons.checkroom_rounded,
+          size: 40,
+          color: theme.colorScheme.primary.withValues(alpha: 0.4),
+        ),
       ),
     );
   }

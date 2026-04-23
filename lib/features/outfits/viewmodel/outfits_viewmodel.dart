@@ -7,29 +7,54 @@ import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
 // ViewModel State
 class OutfitsState {
   final bool isLoading;
+  final String selectedStyle;
+  final String selectedSeason;
   final List<OutfitItem> outfits;
   final String? error;
+  final List<String> styles;
+  final List<String> seasons;
 
   OutfitsState({
     this.isLoading = false,
+    this.selectedStyle = 'Hepsi',
+    this.selectedSeason = 'Hepsi',
     this.outfits = const [],
+    this.styles = const ['Hepsi', 'Rahat', 'Şık', 'Sportif', 'Minimalist', 'Bohem', 'Klasik'],
+    this.seasons = const ['Hepsi', 'İlkbahar', 'Yaz', 'Sonbahar', 'Kış', 'Mevsimlik'],
     this.error,
   });
 
   OutfitsState copyWith({
     bool? isLoading,
+    String? selectedStyle,
+    String? selectedSeason,
     List<OutfitItem>? outfits,
     String? error,
   }) {
     return OutfitsState(
       isLoading: isLoading ?? this.isLoading,
+      selectedStyle: selectedStyle ?? this.selectedStyle,
+      selectedSeason: selectedSeason ?? this.selectedSeason,
       outfits: outfits ?? this.outfits,
+      styles: styles,
+      seasons: seasons,
       error: error,
     );
   }
 
+  List<OutfitItem> get filteredOutfits {
+    var result = outfits;
+    if (selectedStyle != 'Hepsi') {
+      result = result.where((o) => o.style == selectedStyle).toList();
+    }
+    if (selectedSeason != 'Hepsi') {
+      result = result.where((o) => o.season == selectedSeason).toList();
+    }
+    return result;
+  }
+
   List<OutfitItem> get favoriteOutfits {
-    return outfits.where((outfit) => outfit.isFavorite).toList();
+    return filteredOutfits.where((outfit) => outfit.isFavorite).toList();
   }
 }
 
@@ -146,6 +171,13 @@ class OutfitsViewModel extends Notifier<OutfitsState> {
       style: style,
       isHijab: isHijab,
     );
+  }
+  void selectStyle(String style) {
+    state = state.copyWith(selectedStyle: style);
+  }
+
+  void selectSeason(String season) {
+    state = state.copyWith(selectedSeason: season);
   }
 }
 

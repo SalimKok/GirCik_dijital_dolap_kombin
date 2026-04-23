@@ -37,12 +37,29 @@ class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTicker
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Tüm Kombinler'),
-            Tab(text: 'Favoriler'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Row(
+            children: [
+              Expanded(
+                child: TabBar(
+                  controller: _tabController,
+                  tabs: const [
+                    Tab(text: 'Tüm Kombinler'),
+                    Tab(text: 'Favoriler'),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  onPressed: () => _showFilterSheet(context),
+                  icon: const Icon(Icons.filter_list_rounded),
+                  tooltip: 'Filtrele',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       body: outfitsState.isLoading
@@ -51,7 +68,7 @@ class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTicker
               controller: _tabController,
               children: [
                 _buildOutfitsList(
-                  outfitsState.outfits,
+                  outfitsState.filteredOutfits,
                   'Henüz kombin eklemedin.',
                   'Yeni bir kombin oluşturarak başla!',
                   theme,
@@ -366,5 +383,79 @@ class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTicker
         );
       }
     });
+  }
+
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final state = ref.watch(outfitsViewModelProvider);
+            final theme = Theme.of(context);
+            
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Kombinleri Filtrele', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Tarz', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: state.styles.map((style) {
+                      final isSelected = state.selectedStyle == style;
+                      return ChoiceChip(
+                        label: Text(style),
+                        selected: isSelected,
+                        onSelected: (_) => ref.read(outfitsViewModelProvider.notifier).selectStyle(style),
+                        selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                        labelStyle: TextStyle(
+                          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Mevsim', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: state.seasons.map((season) {
+                      final isSelected = state.selectedSeason == season;
+                      return ChoiceChip(
+                        label: Text(season),
+                        selected: isSelected,
+                        onSelected: (_) => ref.read(outfitsViewModelProvider.notifier).selectSeason(season),
+                        selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                        labelStyle: TextStyle(
+                          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

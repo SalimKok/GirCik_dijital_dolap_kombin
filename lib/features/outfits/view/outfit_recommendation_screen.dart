@@ -5,6 +5,8 @@ import 'package:gircik/features/outfits/viewmodel/outfits_viewmodel.dart';
 import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
 import 'package:gircik/data/models/outfit_item.dart';
 
+import '../../home/viewmodel/home_viewmodel.dart';
+
 class OutfitRecommendationScreen extends ConsumerStatefulWidget {
   final OutfitItem? editingOutfit;
   
@@ -48,6 +50,32 @@ class _OutfitRecommendationScreenState extends ConsumerState<OutfitRecommendatio
       });
     } else {
       _tabController = TabController(length: 2, vsync: this);
+      // Hava durumu ve mevsimi mevcut verilere göre ön tanımlı yap
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _prepopulateWeatherData();
+      });
+    }
+  }
+
+  void _prepopulateWeatherData() {
+    final homeState = ref.read(homeViewModelProvider);
+    if (homeState.weather != null) {
+      setState(() {
+        // Hava durumu eşleştirme
+        final weatherCondition = homeState.weather!.condition;
+        if (['Güneşli', 'Bulutlu', 'Yağmurlu', 'Karlı'].contains(weatherCondition)) {
+          _selectedWeather = weatherCondition;
+        } else if (weatherCondition == 'Açık') {
+          _selectedWeather = 'Güneşli';
+        }
+
+        // Mevsim hesaplama
+        final month = DateTime.now().month;
+        if (month >= 3 && month <= 5) _selectedSeason = 'İlkbahar';
+        else if (month >= 6 && month <= 8) _selectedSeason = 'Yaz';
+        else if (month >= 9 && month <= 11) _selectedSeason = 'Sonbahar';
+        else _selectedSeason = 'Kış';
+      });
     }
   }
 

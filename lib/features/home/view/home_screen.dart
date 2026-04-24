@@ -51,12 +51,15 @@ class HomeScreen extends ConsumerWidget {
     final favoriteOutfits = outfitsState.outfits.where((o) => o.isFavorite).toList();
 
     return Scaffold(
-      body: homeState.isLoading
+      body: homeState.isLoading && homeState.weather == null
           ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          : RefreshIndicator(
+              onRefresh: () => ref.read(homeViewModelProvider.notifier).loadHomeData(),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         _buildWelcomeSection(context, homeState.userName),
@@ -71,19 +74,20 @@ class HomeScreen extends ConsumerWidget {
                           nextEventTime,
                           nextEvent,
                         ),
-                  const SizedBox(height: 28),
-                  _buildSectionTitle(context, 'Favori Kombinler'),
-                  const SizedBox(height: 12),
-                  _buildFavoriteOutfits(context, ref, favoriteOutfits),
-                  const SizedBox(height: 28),
-                  _buildSectionTitle(context, 'Bugün'),
-                  const SizedBox(height: 12),
-                  _buildTodayCard(context, ref, homeState),
-                ]),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(context, 'Favori Kombinler'),
+                        const SizedBox(height: 12),
+                        _buildFavoriteOutfits(context, ref, favoriteOutfits),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(context, 'Bugün'),
+                        const SizedBox(height: 12),
+                        _buildTodayCard(context, ref, homeState),
+                      ]),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
     );
   }
 
@@ -196,13 +200,21 @@ class HomeScreen extends ConsumerWidget {
           }).where((url) => url != null).cast<String>().toList();
 
           return Container(
-            width: 148,
+            width: 158,
             decoration: BoxDecoration(
               color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.12),
+                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                width: 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Material(
               color: Colors.transparent,
@@ -340,14 +352,27 @@ class HomeScreen extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surface,
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(30),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.12),
+          color: weatherColor.withValues(alpha: 0.25),
+          width: 2,
         ),
         boxShadow: [
+          BoxShadow(
+            color: weatherColor.withValues(alpha: 0.12),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+          ),
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
@@ -359,80 +384,107 @@ class HomeScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: weatherColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(weatherIcon, color: weatherColor, size: 24),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: weatherColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: weatherColor.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(weatherIcon, color: weatherColor, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        weather.city,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      Text(
+                        weather.condition,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${weather.city}, ${weather.temperature.toInt()}°C',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      weather.condition,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
+              Text(
+                '${weather.temperature.toInt()}°',
+                style: theme.textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w300,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
             ),
             child: Row(
               children: [
-                Icon(Icons.lightbulb_outline_rounded, size: 18, color: theme.colorScheme.primary),
-                const SizedBox(width: 10),
+                Icon(Icons.tips_and_updates_rounded, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     weather.advice,
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          const Divider(height: 1),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          const Divider(height: 1, thickness: 0.5),
+          const SizedBox(height: 24),
           
           if (recommendation == null)
             state.isRecommendationLoading
               ? const Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
+                    padding: EdgeInsets.symmetric(vertical: 24),
                     child: CircularProgressIndicator(),
                   ),
                 )
               : Center(
-                  child: ElevatedButton.icon(
-                    onPressed: () => ref.read(homeViewModelProvider.notifier).getDailyRecommendation(),
-                    icon: const Icon(Icons.auto_awesome_rounded),
-                    label: const Text('Bugünün Kombinini Öner'),
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      foregroundColor: theme.colorScheme.onPrimaryContainer,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => ref.read(homeViewModelProvider.notifier).getDailyRecommendation(),
+                      icon: const Icon(Icons.auto_awesome_rounded),
+                      label: const Text('Bugünün Kombinini Öner'),
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: theme.colorScheme.primaryContainer,
+                        foregroundColor: theme.colorScheme.onPrimaryContainer,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
                     ),
                   ),
                 )
@@ -532,13 +584,28 @@ class _InfoCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: theme.cardTheme.color,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: color.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -579,6 +646,7 @@ class _InfoCard extends StatelessWidget {
           ),
         ),
       ),
+      )
     );
   }
 }

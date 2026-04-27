@@ -161,7 +161,7 @@ class _ProPaywallScreenState extends ConsumerState<ProPaywallScreen> {
               _FeatureItem(
                 icon: Icons.psychology_rounded,
                 title: 'Sınırsız AI Önerisi',
-                subtitle: 'Yapay zeka ile günlük sınır olmadan kombin al',
+                subtitle: 'Yapay zeka ile hiçbir sınır olmadan kombin al',
                 theme: theme,
               ),
               _FeatureItem(

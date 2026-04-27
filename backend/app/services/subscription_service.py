@@ -49,12 +49,9 @@ async def increment_usage(db: AsyncSession, user_id: int, field_name: str):
     current_val = getattr(sub, field_name, 0)
     setattr(sub, field_name, current_val + 1)
     
-    # Reset AI usage daily
+    # Usage date tracking (just to know when they last used it)
     if field_name == "ai_usages_today":
-        today = datetime.now(timezone.utc).date()
-        if sub.last_ai_usage_date != today:
-            sub.ai_usages_today = 1
-            sub.last_ai_usage_date = today
+        sub.last_ai_usage_date = datetime.now(timezone.utc).date()
 
     db.add(sub)
     await db.commit()

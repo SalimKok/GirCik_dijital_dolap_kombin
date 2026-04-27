@@ -41,7 +41,7 @@ async def cancel_plan(
     """Cancel subscription plan."""
     return await subscription_service.cancel_plan(db, user_id=current_user.id)
 
-@router.post("/increment-usage", response_model=Subscription)
+@router.post("/usage", response_model=Subscription)
 async def increment_usage(
     metric: str,
     current_user: Annotated[User, Depends(get_current_user)],

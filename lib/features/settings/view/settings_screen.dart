@@ -498,7 +498,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           _UsageBar(label: 'Kombin', current: subscription.outfitCount, max: FreeLimits.maxOutfits, theme: theme),
           const SizedBox(height: 8),
-          _UsageBar(label: 'AI Öneri', current: subscription.aiUsagesToday, max: FreeLimits.maxAIRecommendationsPerDay, theme: theme),
+          _UsageBar(label: 'AI Öneri', current: subscription.aiUsagesToday, max: FreeLimits.maxTotalAIRecommendations, theme: theme),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,

@@ -10,7 +10,6 @@ class SubscriptionViewModel extends Notifier<Subscription> {
     _repository = ref.watch(subscriptionRepositoryProvider);
     Future.microtask(() => loadStatus());
     
-    // Varsayılan: ücretsiz plan, 0 kullanım (data gelene kadar)
     return const Subscription(
       plan: SubscriptionPlan.free,
       clothingItemCount: 0,
@@ -29,24 +28,22 @@ class SubscriptionViewModel extends Notifier<Subscription> {
     }
   }
 
-  /// Pro plana yükselt
-  Future<void> purchasePlan(SubscriptionPlan plan) async {
+  Future<bool> purchasePlan(SubscriptionPlan plan) async {
     try {
       String planStr = plan == SubscriptionPlan.monthly ? 'monthly' : 'yearly';
       final updatedSub = await _repository.purchase(planStr);
       state = updatedSub;
+      return true;
     } catch (e) {
-      // Revert or show error handled by UI
+      return false;
     }
   }
 
-  /// Pro'dan geri dön (iptal).
   Future<void> cancelSubscription() async {
     try {
       final updatedSub = await _repository.cancel();
       state = updatedSub;
     } catch (e) {
-      
     }
   }
 
@@ -55,33 +52,32 @@ class SubscriptionViewModel extends Notifier<Subscription> {
       final updatedSub = await _repository.incrementUsage(metric);
       state = updatedSub;
     } catch (e) {
-      // Handled silently
     }
   }
 
-  /// Kıyafet ekleme sayacını artır.
+  // --- Limit Kontrolleri ---
+
+  bool get canAddClothing => state.isPro || state.clothingItemCount < FreeLimits.maxClothingItems;
+  bool get canAddOutfit => state.isPro || state.outfitCount < FreeLimits.maxOutfits;
+  bool get canUseAI => state.isPro || state.aiUsagesToday < FreeLimits.maxTotalAIRecommendations;
+  bool get canAddEvent => state.isPro || state.calendarEventCount < FreeLimits.maxCalendarEvents;
+
+  // --- Sayaç Güncellemeleri ---
+
   void incrementClothingCount() {
-    // Optimistic UI
-    state = state.copyWith(clothingItemCount: state.clothingItemCount + 1);
-    _incrementMetric('clothing');
+    _incrementMetric('clothing_item_count');
   }
 
-  /// Kombin sayacını artır.
   void incrementOutfitCount() {
-    state = state.copyWith(outfitCount: state.outfitCount + 1);
-    _incrementMetric('outfit');
+    _incrementMetric('outfit_count');
   }
 
-  /// AI kullanım sayacını artır.
   void incrementAIUsage() {
-    state = state.copyWith(aiUsagesToday: state.aiUsagesToday + 1);
-    _incrementMetric('ai_recommendation');
+    _incrementMetric('ai_usages_today');
   }
 
-  /// Takvim etkinlik sayacını artır.
   void incrementCalendarEventCount() {
-    state = state.copyWith(calendarEventCount: state.calendarEventCount + 1);
-    _incrementMetric('calendar_event');
+    _incrementMetric('calendar_event_count');
   }
 }
 

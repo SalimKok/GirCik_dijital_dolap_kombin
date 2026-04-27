@@ -6,6 +6,9 @@ import 'package:gircik/features/laundry/viewmodel/laundry_viewmodel.dart';
 import 'package:gircik/data/models/clothing_item.dart';
 import 'package:gircik/core/constants/api_constants.dart';
 
+import '../../subscription/view/pro_paywall_screen.dart';
+import '../../subscription/viewmodel/subscription_viewmodel.dart';
+
 class WardrobeScreen extends ConsumerWidget {
   const WardrobeScreen({super.key});
 
@@ -47,11 +50,20 @@ class WardrobeScreen extends ConsumerWidget {
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const ClothingCaptureScreen(),
-            ),
-          );
+          final canAdd = ref.read(subscriptionProvider.notifier).canAddClothing;
+          if (canAdd) {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ClothingCaptureScreen(),
+              ),
+            );
+          } else {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ProPaywallScreen(),
+              ),
+            );
+          }
         },
         icon: const Icon(Icons.add_a_photo_rounded),
         label: const Text('Yeni kıyafet ekle'),

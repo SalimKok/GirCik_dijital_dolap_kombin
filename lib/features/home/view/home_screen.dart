@@ -11,6 +11,9 @@ import 'package:gircik/core/providers/navigation_provider.dart';
 import 'package:gircik/core/constants/api_constants.dart';
 import 'package:gircik/core/services/weather_service.dart';
 
+import '../../subscription/view/pro_paywall_screen.dart';
+import '../../subscription/viewmodel/subscription_viewmodel.dart';
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -475,7 +478,18 @@ class HomeScreen extends ConsumerWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => ref.read(homeViewModelProvider.notifier).getDailyRecommendation(),
+                      onPressed: () {
+                        final canUseAI = ref.read(subscriptionProvider.notifier).canUseAI;
+                        if (canUseAI) {
+                          ref.read(homeViewModelProvider.notifier).getDailyRecommendation();
+                        } else {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ProPaywallScreen(),
+                            ),
+                          );
+                        }
+                      },
                       icon: const Icon(Icons.auto_awesome_rounded),
                       label: const Text('Bugünün Kombinini Öner'),
                       style: ElevatedButton.styleFrom(

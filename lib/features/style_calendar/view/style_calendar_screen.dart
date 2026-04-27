@@ -10,6 +10,8 @@ import 'package:gircik/core/constants/api_constants.dart';
 import 'package:gircik/data/models/outfit_item.dart';
 
 import '../../../data/models/calendar_event.dart';
+import '../../subscription/view/pro_paywall_screen.dart';
+import '../../subscription/viewmodel/subscription_viewmodel.dart';
 
 class StyleCalendarScreen extends ConsumerStatefulWidget {
   const StyleCalendarScreen({super.key});
@@ -501,6 +503,18 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
                       onPressed: () {
                         final title = textController.text.trim();
                         if (title.isNotEmpty) {
+                          // Check subscription limit
+                          final canAdd = ref.read(subscriptionProvider.notifier).canAddEvent;
+                          if (!canAdd) {
+                            Navigator.pop(sheetContext);
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const ProPaywallScreen(),
+                              ),
+                            );
+                            return;
+                          }
+
                           final selectedDay = ref.read(styleCalendarViewModelProvider).selectedDay ?? DateTime.now();
                           final event = CalendarEvent(
                             id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -509,6 +523,9 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
                             outfitId: selectedOutfitId,
                           );
                           ref.read(styleCalendarViewModelProvider.notifier).addEvent(event);
+                          
+                          // Increment usage count
+                          ref.read(subscriptionProvider.notifier).incrementCalendarEventCount();
                           
                           Navigator.pop(sheetContext);
                           ScaffoldMessenger.of(context).showSnackBar(

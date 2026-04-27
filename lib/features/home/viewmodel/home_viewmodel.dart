@@ -6,6 +6,7 @@ import 'package:gircik/core/services/weather_service.dart';
 import 'package:gircik/features/outfits/repository/outfit_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:gircik/features/subscription/viewmodel/subscription_viewmodel.dart';
 
 // ViewModel State
 class HomeState {
@@ -175,6 +176,9 @@ class HomeViewModel extends Notifier<HomeState> {
       
       // Save to cache
       await _saveToCache(recommendation);
+      
+      // Increment AI Usage count in subscription tracker
+      ref.read(subscriptionProvider.notifier).incrementAIUsage();
       
       state = state.copyWith(isRecommendationLoading: false, dailyRecommendation: recommendation);
     } catch (e) {

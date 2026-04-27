@@ -4,6 +4,8 @@ import 'package:gircik/features/outfits/repository/outfit_repository.dart';
 import 'package:gircik/features/laundry/viewmodel/laundry_viewmodel.dart';
 import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
 
+import '../../subscription/viewmodel/subscription_viewmodel.dart';
+
 // ViewModel State
 class OutfitsState {
   final bool isLoading;
@@ -100,6 +102,11 @@ class OutfitsViewModel extends Notifier<OutfitsState> {
   }
   
   Future<void> addOutfit(OutfitItem outfit) async {
+    final canAdd = ref.read(subscriptionProvider.notifier).canAddOutfit;
+    if (!canAdd) {
+      throw Exception('SUBSCRIPTION_REQUIRED');
+    }
+
     state = state.copyWith(isLoading: true, error: null);
     try {
       final newOutfit = await _repository.createOutfit(outfit);
@@ -107,6 +114,7 @@ class OutfitsViewModel extends Notifier<OutfitsState> {
         isLoading: false, 
         outfits: [...state.outfits, newOutfit]
       );
+      ref.read(subscriptionProvider.notifier).incrementOutfitCount();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       rethrow;

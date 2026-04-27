@@ -7,9 +7,9 @@ enum SubscriptionPlan {
 
 /// Ücretsiz kullanıcılar için kullanım sınırları.
 class FreeLimits {
-  static const int maxClothingItems = 20;
+  static const int maxClothingItems = 3;
   static const int maxOutfits = 5;
-  static const int maxAIRecommendationsPerDay = 3;
+  static const int maxTotalAIRecommendations = 3;
   static const int maxCalendarEvents = 10;
 }
 
@@ -38,7 +38,7 @@ class Subscription {
       isPro || outfitCount < FreeLimits.maxOutfits;
 
   bool get canUseAI =>
-      isPro || aiUsagesToday < FreeLimits.maxAIRecommendationsPerDay;
+      isPro || aiUsagesToday < FreeLimits.maxTotalAIRecommendations;
 
   bool get canAddCalendarEvent =>
       isPro || calendarEventCount < FreeLimits.maxCalendarEvents;
@@ -50,7 +50,7 @@ class Subscription {
       isPro ? -1 : FreeLimits.maxOutfits - outfitCount;
 
   int get remainingAI =>
-      isPro ? -1 : FreeLimits.maxAIRecommendationsPerDay - aiUsagesToday;
+      isPro ? -1 : FreeLimits.maxTotalAIRecommendations - aiUsagesToday;
 
   int get remainingCalendarEvents =>
       isPro ? -1 : FreeLimits.maxCalendarEvents - calendarEventCount;

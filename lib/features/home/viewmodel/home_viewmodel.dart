@@ -4,6 +4,8 @@ import 'package:gircik/features/laundry/repository/laundry_repository.dart';
 import 'package:gircik/features/style_calendar/repository/calendar_repository.dart';
 import 'package:gircik/core/services/weather_service.dart';
 import 'package:gircik/features/outfits/repository/outfit_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 // ViewModel State
 class HomeState {
@@ -78,10 +80,16 @@ class HomeViewModel extends Notifier<HomeState> {
   Future<void> loadHomeData() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final user = await _authRepo.getCurrentUser();
-      final laundryItems = await _laundryRepo.getLaundryItems();
-      final calendarEvents = await _calendarRepo.getEvents();
-      final weather = await _weatherService.getCurrentWeather();
+      // 1. Temel verileri paralel olarak çek (Kullanıcı, Çamaşır, Takvim)
+      final results = await Future.wait([
+        _authRepo.getCurrentUser(),
+        _laundryRepo.getLaundryItems(),
+        _calendarRepo.getEvents(),
+      ]);
+
+      final user = results[0] as dynamic; // User
+      final laundryItems = results[1] as List<dynamic>; // List<LaundryItem>
+      final calendarEvents = results[2] as List<dynamic>; // List<CalendarEvent>
 
       final needsWashCount = laundryItems.where((i) => i.status.name == 'needsWash').length;
       
@@ -101,21 +109,68 @@ class HomeViewModel extends Notifier<HomeState> {
         } else if (diff.inDays == 1) {
           nextEventTime = 'Yarın:';
         } else {
-          nextEventTime = '\${diff.inDays} gün sonra:';
+          nextEventTime = '${diff.inDays} gün sonra:';
         }
       }
 
+      // 2. Ana ekranı hemen güncelle (Hava durumu henüz yüklenmemiş olsa bile)
       state = state.copyWith(
         isLoading: false,
         userName: user.name,
         laundryCount: needsWashCount,
         nextEventTitle: nextEventTitle,
         nextEventTime: nextEventTime,
-        weather: weather,
       );
+
+      // 3. Hava durumunu arka planda yükle
+      _loadWeatherInBackground();
+
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  Future<void> _loadWeatherInBackground() async {
+    try {
+      final weather = await _weatherService.getCurrentWeather();
+      state = state.copyWith(weather: weather);
+      
+      // Hava durumu gelince cache kontrolü yap
+      await _checkAndLoadCache();
+    } catch (e) {
+      print('Background Weather Error: $e');
+    }
+  }
+
+  Future<void> _checkAndLoadCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheData = prefs.getString('daily_recommendation_cache');
+    final cacheDate = prefs.getString('daily_recommendation_date');
+
+    final today = DateTime.now().toIso8601String().split('T')[0];
+
+    if (cacheData != null && cacheDate == today) {
+      // Cache is valid for today
+      try {
+        final decoded = json.decode(cacheData);
+        state = state.copyWith(dailyRecommendation: decoded as Map<String, dynamic>);
+      } catch (e) {
+        print('Cache parse error: $e');
+        // If cache is corrupted, generate new one
+        await getDailyRecommendation();
+      }
+    } else {
+      // No valid cache, generate automatically
+      await getDailyRecommendation();
+    }
+  }
+
+  Future<void> _saveToCache(Map<String, dynamic> recommendation) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    
+    await prefs.setString('daily_recommendation_cache', json.encode(recommendation));
+    await prefs.setString('daily_recommendation_date', today);
   }
 
   Future<void> getDailyRecommendation() async {
@@ -136,6 +191,10 @@ class HomeViewModel extends Notifier<HomeState> {
         event: 'Günlük/Casual',
         style: 'Rahat',
       );
+      
+      // Save to cache
+      await _saveToCache(recommendation);
+      
       state = state.copyWith(isRecommendationLoading: false, dailyRecommendation: recommendation);
     } catch (e) {
       state = state.copyWith(isRecommendationLoading: false, error: e.toString());

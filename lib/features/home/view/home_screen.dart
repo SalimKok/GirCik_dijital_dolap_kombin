@@ -54,7 +54,7 @@ class HomeScreen extends ConsumerWidget {
     final favoriteOutfits = outfitsState.outfits.where((o) => o.isFavorite).toList();
 
     return Scaffold(
-      body: homeState.isLoading && homeState.weather == null
+      body: homeState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () => ref.read(homeViewModelProvider.notifier).loadHomeData(),
@@ -338,7 +338,42 @@ class HomeScreen extends ConsumerWidget {
     final recommendation = state.dailyRecommendation;
     final wardrobeItems = ref.watch(wardrobeViewModelProvider).items;
 
-    if (weather == null) return const SizedBox.shrink();
+    if (weather == null) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        height: 160,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Hava durumu ve konum güncelleniyor...',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     IconData weatherIcon = Icons.wb_sunny_rounded;
     Color weatherColor = Colors.orange;

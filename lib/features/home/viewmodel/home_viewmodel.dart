@@ -84,7 +84,6 @@ class HomeViewModel extends Notifier<HomeState> {
       final user = await _authRepo.getCurrentUser();
       final laundryItems = await _laundryRepo.getLaundryItems();
       final calendarEvents = await _calendarRepo.getEvents();
-      final weather = await _weatherService.getCurrentWeather();
 
       final needsWashCount = laundryItems.where((i) => i.status.name == 'needsWash').length;
       
@@ -104,7 +103,7 @@ class HomeViewModel extends Notifier<HomeState> {
         } else if (diff.inDays == 1) {
           nextEventTime = 'Yarın:';
         } else {
-          nextEventTime = '\${diff.inDays} gün sonra:';
+          nextEventTime = '${diff.inDays} gün sonra:';
         }
       }
 
@@ -114,13 +113,22 @@ class HomeViewModel extends Notifier<HomeState> {
         laundryCount: needsWashCount,
         nextEventTitle: nextEventTitle,
         nextEventTime: nextEventTime,
-        weather: weather,
       );
 
-      // Check cache after data is loaded
-      await _checkAndLoadCache();
+      // Hava durumu ve cache işlemlerini UI'ı bloklamadan arka planda başlat
+      _loadWeatherAndCache();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> _loadWeatherAndCache() async {
+    try {
+      final weather = await _weatherService.getCurrentWeather();
+      state = state.copyWith(weather: weather);
+      await _checkAndLoadCache();
+    } catch (e) {
+      print('Weather loading error: $e');
     }
   }
 

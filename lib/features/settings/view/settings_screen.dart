@@ -30,7 +30,7 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         children: [
           // ── Pro Durum Kartı ──
-          _buildProStatusCard(context, theme, subscription),
+          _buildProStatusCard(context, ref, theme, subscription),
           const SizedBox(height: 24),
 
           // ── Görünüm ──
@@ -414,7 +414,39 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProStatusCard(BuildContext context, ThemeData theme, Subscription subscription) {
+  void _showCancelSubscriptionDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Aboneliği İptal Et'),
+        content: const Text('Pro aboneliğinizi iptal etmek istediğinize emin misiniz? Sınırsız özelliklere erişiminizi kaybedeceksiniz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Vazgeç')),
+          FilledButton(
+            onPressed: () async {
+              try {
+                await ref.read(subscriptionProvider.notifier).cancelSubscription();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Aboneliğiniz başarıyla iptal edildi.')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Evet, İptal Et'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProStatusCard(BuildContext context, WidgetRef ref, ThemeData theme, Subscription subscription) {
     if (subscription.isPro) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -433,21 +465,37 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
-        child: Row(
+        child: Column(
           children: [
-            const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 40),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('GiyÇık Pro', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('${subscription.planDisplayName} · Tüm özellikler aktif', style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                ],
+            Row(
+              children: [
+                const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 40),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('GiyÇık Pro', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('${subscription.planDisplayName} · Tüm özellikler aktif', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 28),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => _showCancelSubscriptionDialog(context, ref),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                ),
+                child: const Text('Aboneliği İptal Et'),
               ),
             ),
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 28),
           ],
         ),
       );

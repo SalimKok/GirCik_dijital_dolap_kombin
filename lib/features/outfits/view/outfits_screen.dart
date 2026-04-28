@@ -6,6 +6,9 @@ import 'package:gircik/features/wardrobe/viewmodel/wardrobe_viewmodel.dart';
 import 'package:gircik/features/laundry/viewmodel/laundry_viewmodel.dart';
 import 'package:gircik/data/models/outfit_item.dart';
 import 'package:gircik/core/constants/api_constants.dart';
+import '../../subscription/view/pro_paywall_screen.dart';
+import '../../subscription/viewmodel/subscription_viewmodel.dart';
+import 'package:gircik/data/models/subscription.dart';
 
 class OutfitsScreen extends ConsumerStatefulWidget {
   const OutfitsScreen({super.key});
@@ -83,11 +86,29 @@ class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTicker
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const OutfitRecommendationScreen(),
-            ),
-          );
+          final isPro = ref.read(subscriptionProvider).isPro;
+          final currentCount = ref.read(outfitsViewModelProvider).outfits.length;
+          final canAdd = isPro || currentCount < FreeLimits.maxOutfits;
+          
+          if (canAdd) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const OutfitRecommendationScreen(),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ücretsiz kombin oluşturma limitine ulaştınız. Sınırsız kullanım için Pro\'ya geçin.'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ProPaywallScreen(),
+              ),
+            );
+          }
         },
         icon: const Icon(Icons.add_rounded),
         label: const Text('Yeni Öneri Al'),

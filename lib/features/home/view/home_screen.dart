@@ -518,6 +518,12 @@ class HomeScreen extends ConsumerWidget {
                         if (canUseAI) {
                           ref.read(homeViewModelProvider.notifier).getDailyRecommendation();
                         } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Günlük ücretsiz AI önerisi limitine ulaştınız. Sınırsız kullanım için Pro\'ya geçin.'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (_) => const ProPaywallScreen(),

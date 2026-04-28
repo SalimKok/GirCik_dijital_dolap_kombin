@@ -12,6 +12,7 @@ import 'package:gircik/data/models/outfit_item.dart';
 import '../../../data/models/calendar_event.dart';
 import '../../subscription/view/pro_paywall_screen.dart';
 import '../../subscription/viewmodel/subscription_viewmodel.dart';
+import 'package:gircik/data/models/subscription.dart';
 
 class StyleCalendarScreen extends ConsumerStatefulWidget {
   const StyleCalendarScreen({super.key});
@@ -503,10 +504,18 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
                       onPressed: () {
                         final title = textController.text.trim();
                         if (title.isNotEmpty) {
-                          // Check subscription limit
-                          final canAdd = ref.read(subscriptionProvider.notifier).canAddEvent;
+                          final isPro = ref.read(subscriptionProvider).isPro;
+                          final currentCount = ref.read(styleCalendarViewModelProvider).events.length;
+                          final canAdd = isPro || currentCount < FreeLimits.maxCalendarEvents;
+                          
                           if (!canAdd) {
                             Navigator.pop(sheetContext);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Ücretsiz takvim etkinliği ekleme limitine ulaştınız. Sınırsız kullanım için Pro\'ya geçin.'),
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
                                 builder: (_) => const ProPaywallScreen(),

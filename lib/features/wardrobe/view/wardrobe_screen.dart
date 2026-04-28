@@ -8,6 +8,7 @@ import 'package:gircik/core/constants/api_constants.dart';
 
 import '../../subscription/view/pro_paywall_screen.dart';
 import '../../subscription/viewmodel/subscription_viewmodel.dart';
+import 'package:gircik/data/models/subscription.dart';
 
 class WardrobeScreen extends ConsumerWidget {
   const WardrobeScreen({super.key});
@@ -50,7 +51,10 @@ class WardrobeScreen extends ConsumerWidget {
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          final canAdd = ref.read(subscriptionProvider.notifier).canAddClothing;
+          final isPro = ref.read(subscriptionProvider).isPro;
+          final currentCount = ref.read(wardrobeViewModelProvider).items.length;
+          final canAdd = isPro || currentCount < FreeLimits.maxClothingItems;
+          
           if (canAdd) {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -58,6 +62,12 @@ class WardrobeScreen extends ConsumerWidget {
               ),
             );
           } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ücretsiz kıyafet ekleme limitine ulaştınız. Sınırsız kullanım için Pro\'ya geçin.'),
+                duration: Duration(seconds: 3),
+              ),
+            );
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const ProPaywallScreen(),

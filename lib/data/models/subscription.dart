@@ -8,9 +8,9 @@ enum SubscriptionPlan {
 /// Ücretsiz kullanıcılar için kullanım sınırları.
 class FreeLimits {
   static const int maxClothingItems = 3;
-  static const int maxOutfits = 5;
+  static const int maxOutfits = 2;
   static const int maxTotalAIRecommendations = 3;
-  static const int maxCalendarEvents = 10;
+  static const int maxCalendarEvents = 1;
 }
 
 /// Kullanıcının abonelik durumunu temsil eder.
@@ -89,10 +89,10 @@ class Subscription {
 
     return Subscription(
       plan: parsedPlan,
-      clothingItemCount: json['used_clothing_count'] as int? ?? 0,
-      outfitCount: json['used_outfit_count'] as int? ?? 0,
-      aiUsagesToday: json['used_ai_count'] as int? ?? 0,
-      calendarEventCount: json['used_calendar_count'] as int? ?? 0,
+      clothingItemCount: json['clothing_item_count'] as int? ?? 0,
+      outfitCount: json['outfit_count'] as int? ?? 0,
+      aiUsagesToday: json['ai_usages_today'] as int? ?? 0,
+      calendarEventCount: json['calendar_event_count'] as int? ?? 0,
     );
   }
 
@@ -103,10 +103,10 @@ class Subscription {
 
     return {
       'plan': planStr,
-      'used_clothing_count': clothingItemCount,
-      'used_outfit_count': outfitCount,
-      'used_ai_count': aiUsagesToday,
-      'used_calendar_count': calendarEventCount,
+      'clothing_item_count': clothingItemCount,
+      'outfit_count': outfitCount,
+      'ai_usages_today': aiUsagesToday,
+      'calendar_event_count': calendarEventCount,
     };
   }
 }

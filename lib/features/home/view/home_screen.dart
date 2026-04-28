@@ -13,6 +13,7 @@ import 'package:gircik/core/services/weather_service.dart';
 
 import '../../subscription/view/pro_paywall_screen.dart';
 import '../../subscription/viewmodel/subscription_viewmodel.dart';
+import '../../travel/view/travel_assistant_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -145,8 +146,8 @@ class HomeScreen extends ConsumerWidget {
             : 'Yıkanacak kıyafet yok.',
           color: Colors.blue,
           onTap: () {
-            // Hijyen sekmesi index 4
-            ref.read(mainNavIndexProvider.notifier).navigate(4);
+            // Hijyen sekmesi index 5
+            ref.read(mainNavIndexProvider.notifier).navigate(5);
           },
         ),
         const SizedBox(height: 12),

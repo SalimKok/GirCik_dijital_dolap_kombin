@@ -7,7 +7,9 @@ import 'package:gircik/features/style_calendar/view/style_calendar_screen.dart';
 import 'package:gircik/features/laundry/view/laundry_screen.dart';
 import 'package:gircik/features/settings/view/settings_screen.dart';
 import 'package:gircik/features/subscription/viewmodel/subscription_viewmodel.dart';
+import 'package:gircik/features/subscription/view/pro_paywall_screen.dart';
 import 'package:gircik/core/providers/navigation_provider.dart';
+import 'package:gircik/features/travel/view/travel_assistant_screen.dart';
 
 class MainLayoutScreen extends ConsumerStatefulWidget {
   const MainLayoutScreen({super.key});
@@ -24,6 +26,7 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
     const WardrobeScreen(),
     const OutfitsScreen(),
     const StyleCalendarScreen(),
+    const TravelAssistantScreen(),
     const LaundryScreen(),
   ];
 
@@ -32,6 +35,7 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
     'Gardırop',
     'Kombinler',
     'Stil Takvimi',
+    'Valiz Asistanı',
     'Hijyen & Yıkama',
   ];
 
@@ -113,6 +117,15 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: (index) {
+          if (index == 4) { // Valiz Asistanı indexi
+            final isPro = ref.read(subscriptionProvider).isPro;
+            if (!isPro) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Valiz Asistanı sadece Pro üyelere özeldir.')));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProPaywallScreen()));
+              return;
+            }
+          }
           setState(() {
             _currentIndex = index;
           });
@@ -138,6 +151,11 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month_rounded),
             label: 'Takvim',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.flight_takeoff_outlined),
+            selectedIcon: Icon(Icons.flight_takeoff_rounded),
+            label: 'Valiz',
           ),
           NavigationDestination(
             icon: Icon(Icons.local_laundry_service_outlined),

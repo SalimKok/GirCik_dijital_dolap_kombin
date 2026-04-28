@@ -19,3 +19,4 @@ class User(Base):
     laundry_items = relationship("LaundryItem", back_populates="user", cascade="all, delete-orphan")
     calendar_events = relationship("CalendarEvent", back_populates="user", cascade="all, delete-orphan")
     subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    travel_plans = relationship("TravelPlan", back_populates="user", cascade="all, delete-orphan")

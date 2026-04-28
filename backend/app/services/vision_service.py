@@ -110,3 +110,61 @@ def generate_outfit(wardrobe_items: list, season: str, weather: str, event: str,
         import traceback
         traceback.print_exc()
         return {"error": f"AI Hatası: {str(e)} -> Gelen Metin: {response.text if 'response' in locals() else 'Yok'}"}
+
+def generate_travel_pack(wardrobe_items: list, destination: str, start_date: str, end_date: str, purpose: str, is_hijab: bool = False) -> dict:
+    """Generates a travel packing list and daily outfits based on destination and purpose."""
+    if not settings.GEMINI_API_KEY:
+        print("GEMINI_API_KEY is missing. Cannot generate travel pack.")
+        return {}
+
+    try:
+        model = genai.GenerativeModel('gemini-flash-latest')
+        
+        items_str = ""
+        for item in wardrobe_items:
+            items_str += f"- ID: {item.get('id')}, Adı: {item.get('name')}, Kategori: {item.get('category')}, Renk: {item.get('color')}\n"
+
+        prompt = f'''
+        Sen profesyonel bir seyahat ve moda asistanısın. Kullanıcı yaklaşan bir seyahati için senden valiz hazırlamanı istiyor.
+        Seyahat Detayları:
+        - Gidilecek Şehir/Yer: {destination}
+        - Başlangıç Tarihi: {start_date}
+        - Bitiş Tarihi: {end_date}
+        - Seyahat Amacı: {purpose}
+        - Tesettür Giyim Tercihi: {'Evet, tesettür kombinleri oluştur (Şal/Eşarp dahil)' if is_hijab else 'Hayır'}
+        
+        Kullanıcının Dolabındaki Eşyalar:
+        {items_str}
+
+        Lütfen belirtilen tarihlerdeki mevsimi ve şehrin iklimini tahmin ederek, kullanıcının dolabından en uygun eşyaları seçip gün gün bir seyahat kombin planı ve genel bir valiz listesi oluştur.
+        
+        Döneceğin cevap SADECE aşağıdaki JSON formatında olmalı, ekstra metin olmasın:
+        {{
+            "summary": "Seyahat için valiz seçimi ve şehrin hava durumu hakkında kısa bir tavsiye yazısı",
+            "packing_list": ["Önerilen valiz içi genel eşyalar (örn: pasaport, güneş kremi)"],
+            "days": [
+                {{
+                    "day": 1,
+                    "title": "İlk gün şehir turu kombini",
+                    "top_id": "ID veya null",
+                    "bottom_id": "ID veya null",
+                    "shoes_id": "ID veya null",
+                    "outerwear_id": "ID veya null",
+                    "accessory_id": "ID veya null",
+                    "shawl_id": "ID veya null"
+                }}
+            ]
+        }}
+        Seyahatin gün sayısını Başlangıç ve Bitiş tarihlerinden hesapla (maksimum 7 gün için plan yap). Eğer kıyafet yoksa ilgili ID yerine null dön.
+        '''
+        
+        response = model.generate_content(prompt)
+        text = response.text
+        result_text = text.replace('```json', '').replace('```', '').strip()
+            
+        data = json.loads(result_text)
+        return data
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": f"AI Hatası: {str(e)}"}

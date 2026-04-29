@@ -8,12 +8,14 @@ enum AuthStatus { initial, authenticated, unauthenticated }
 class AuthState {
   final AuthStatus status;
   final bool hasSeenWelcome;
+  final bool hasSeenSplash;
   final bool isLoading;
   final String? error;
 
   AuthState({
     this.status = AuthStatus.initial,
     this.hasSeenWelcome = false,
+    this.hasSeenSplash = false,
     this.isLoading = false,
     this.error,
   });
@@ -21,12 +23,14 @@ class AuthState {
   AuthState copyWith({
     AuthStatus? status,
     bool? hasSeenWelcome,
+    bool? hasSeenSplash,
     bool? isLoading,
     String? error,
   }) {
     return AuthState(
       status: status ?? this.status,
       hasSeenWelcome: hasSeenWelcome ?? this.hasSeenWelcome,
+      hasSeenSplash: hasSeenSplash ?? this.hasSeenSplash,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -119,6 +123,11 @@ class AuthViewModel extends Notifier<AuthState> {
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();
     await setLoggedIn(false);
+    state = state.copyWith(hasSeenSplash: false);
+  }
+
+  void setSeenSplash(bool value) {
+    state = state.copyWith(hasSeenSplash: value);
   }
 
   Future<void> deleteAccount() async {

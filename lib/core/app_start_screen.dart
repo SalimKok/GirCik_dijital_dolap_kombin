@@ -4,6 +4,7 @@ import 'package:gircik/core/main_layout_screen.dart';
 import 'package:gircik/features/auth/view/login_screen.dart';
 import 'package:gircik/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:gircik/features/onboarding/view/welcome_screen.dart';
+import 'package:gircik/features/onboarding/view/app_loading_splash_screen.dart';
 
 class AppStartScreen extends ConsumerWidget {
   const AppStartScreen({super.key});
@@ -46,7 +47,12 @@ class AppStartScreen extends ConsumerWidget {
       return const LoginScreen();
     }
 
-    // 3. Ana Sayfa
+    // 3. Açılış Ekranı (Splash Screen - Giriş yapıldıktan hemen sonra)
+    if (!authState.hasSeenSplash) {
+      return const AppLoadingSplashScreen();
+    }
+
+    // 4. Ana Sayfa
     return const MainLayoutScreen();
   }
 }

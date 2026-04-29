@@ -66,8 +66,6 @@ class HomeScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        _buildWelcomeSection(context, homeState.userName),
-                        const SizedBox(height: 28),
                         _buildSectionTitle(context, 'Yaklaşan Önemli Bilgiler'),
                         const SizedBox(height: 12),
                         _buildUpcomingInfo(
@@ -96,26 +94,6 @@ class HomeScreen extends ConsumerWidget {
   }
 
 
-  Widget _buildWelcomeSection(BuildContext context, String userName) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Merhaba, $userName',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontSize: 15,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Bugün ne giyeceksin?',
-          style: theme.textTheme.headlineMedium,
-        ),
-      ],
-    );
-  }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     final theme = Theme.of(context);

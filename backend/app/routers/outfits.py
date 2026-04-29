@@ -35,6 +35,30 @@ async def generate_outfit_recommendation(
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Generate an outfit recommendation using AI."""
+    from app.models.subscription import Subscription
+    from sqlalchemy import select
+    from datetime import datetime, timezone
+
+    # 1. Check Subscription and Trial Limit
+    sub_res = await db.execute(select(Subscription).where(Subscription.user_id == current_user.id))
+    subscription = sub_res.scalar_one_or_none()
+    is_pro = subscription.is_pro if subscription else False
+    
+    now = datetime.now(timezone.utc)
+    # Ensure timezone awareness for comparison
+    user_created_at = current_user.created_at
+    if user_created_at.tzinfo is None:
+        user_created_at = user_created_at.replace(tzinfo=timezone.utc)
+        
+    days_since_creation = (now - user_created_at).days
+    
+    if not is_pro and days_since_creation > 7:
+        raise HTTPException(
+            status_code=403, 
+            detail="Yapay zeka kombin önerisi için 7 günlük ücretsiz deneme süreniz doldu. Lütfen sınırsız öneri almak için Pro sürüme geçiş yapın."
+        )
+
+    # 2. Fetch wardrobe
     from app.services import clothing_service, vision_service
     clothes = await clothing_service.get_clothing_items(db, user_id=current_user.id)
     

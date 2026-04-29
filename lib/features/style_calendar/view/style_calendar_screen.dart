@@ -53,7 +53,7 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          _showAddEventDialog(context);
+          _showEventDialog(context);
         },
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
@@ -275,6 +275,38 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
                     ],
                   ),
                 ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showEventDialog(context, existingEvent: event);
+                    } else if (value == 'delete') {
+                      _showDeleteDialog(context, event);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_rounded, size: 20),
+                          SizedBox(width: 12),
+                          Text('Düzenle'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline_rounded, size: 20, color: theme.colorScheme.error),
+                          const SizedBox(width: 12),
+                          Text('Sil', style: TextStyle(color: theme.colorScheme.error)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -343,9 +375,9 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
     );
   }
 
-  void _showAddEventDialog(BuildContext context) {
-    final textController = TextEditingController();
-    String? selectedOutfitId;
+  void _showEventDialog(BuildContext context, {CalendarEvent? existingEvent}) {
+    final textController = TextEditingController(text: existingEvent?.title ?? '');
+    String? selectedOutfitId = existingEvent?.outfitId;
 
     showModalBottomSheet(
       context: context,
@@ -371,7 +403,7 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Yeni Plan Ekle',
+                    existingEvent != null ? 'Planı Düzenle' : 'Yeni Plan Ekle',
                     style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -504,6 +536,19 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
                       onPressed: () {
                         final title = textController.text.trim();
                         if (title.isNotEmpty) {
+                          if (existingEvent != null) {
+                            final updatedEvent = existingEvent.copyWith(
+                              title: title,
+                              outfitId: selectedOutfitId,
+                            );
+                            ref.read(styleCalendarViewModelProvider.notifier).updateEvent(updatedEvent);
+                            Navigator.pop(sheetContext);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Not güncellendi!')),
+                            );
+                            return;
+                          }
+
                           final isPro = ref.read(subscriptionProvider).isPro;
                           final currentCount = ref.read(styleCalendarViewModelProvider).events.length;
                           final canAdd = isPro || currentCount < FreeLimits.maxCalendarEvents;
@@ -552,6 +597,33 @@ class _StyleCalendarScreenState extends ConsumerState<StyleCalendarScreen> {
           },
         );
       },
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, CalendarEvent event) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sil'),
+        content: const Text('Bu takvim notunu silmek istediğinize emin misiniz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('İptal'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(styleCalendarViewModelProvider.notifier).deleteEvent(event.id);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Not silindi!')),
+              );
+            },
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            child: const Text('Sil'),
+          ),
+        ],
+      ),
     );
   }
 }

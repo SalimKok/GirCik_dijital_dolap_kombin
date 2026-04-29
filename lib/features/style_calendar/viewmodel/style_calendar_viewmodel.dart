@@ -95,6 +95,34 @@ class StyleCalendarViewModel extends Notifier<StyleCalendarState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+  Future<void> updateEvent(CalendarEvent event) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final updatedEvent = await _repository.updateEvent(event);
+      final newEvents = state.events.map((e) => e.id == updatedEvent.id ? updatedEvent : e).toList();
+      state = state.copyWith(
+        isLoading: false, 
+        events: newEvents
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> deleteEvent(String id) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _repository.deleteEvent(id);
+      final newEvents = state.events.where((e) => e.id != id).toList();
+      state = state.copyWith(
+        isLoading: false, 
+        events: newEvents
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
 }
 
 // Global Provider

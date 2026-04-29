@@ -26,7 +26,19 @@ class CalendarRepository {
       );
       return CalendarEvent.fromJson(response.data);
     } catch (e) {
-      throw Exception('Etkinlik oluşturulamadı: \${_handleError(e)}');
+      throw Exception('Etkinlik oluşturulamadı: ${_handleError(e)}');
+    }
+  }
+
+  Future<CalendarEvent> updateEvent(CalendarEvent event) async {
+    try {
+      final response = await _apiClient.client.put(
+        '/calendar/${event.id}',
+        data: event.toJson(),
+      );
+      return CalendarEvent.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Etkinlik güncellenemedi: ${_handleError(e)}');
     }
   }
 

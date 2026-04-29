@@ -8,12 +8,13 @@ except ImportError:
     # Fallback to prevent crash if rembg is not fully installed yet in some environments
     def remove(data): return data
 
-import google.generativeai as genai
+from google import genai
 from app.config import settings
 
-# Configure Gemini
+# Configure Gemini Client
+client = None
 if settings.GEMINI_API_KEY:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
 def remove_background(image_bytes: bytes) -> bytes:
     """Removes the background from an image using rembg."""
@@ -34,9 +35,7 @@ def analyze_clothing(image_bytes: bytes) -> dict:
         # Convert bytes to PIL Image for Gemini
         img = Image.open(io.BytesIO(image_bytes))
         
-        # Initialize Gemini model
-        model = genai.GenerativeModel('gemini-flash-latest')
-        
+        # Initialize Gemini model call
         prompt = '''
         Bu resmi analiz et ve giysi hakkında şu bilgileri JSON formatında döndür:
         1. "name": Kıyafet için kısa ve jenerik bir ad (örn: Mavi Kışlık Kazak, Siyah Kot)
@@ -46,7 +45,10 @@ def analyze_clothing(image_bytes: bytes) -> dict:
         Sadece JSON objesini döndür, etrafında markdown (```json) veya ters tırnak olmasın.
         '''
         
-        response = model.generate_content([prompt, img])
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[prompt, img]
+        )
         
         # Parse JSON
         result_text = response.text.replace('```json', '').replace('```', '').strip()
@@ -63,8 +65,6 @@ def generate_outfit(wardrobe_items: list, season: str, weather: str, event: str,
         return {}
 
     try:
-        model = genai.GenerativeModel('gemini-flash-latest')
-        
         # Prepare wardrobe data string
         items_str = ""
         for item in wardrobe_items:
@@ -98,8 +98,11 @@ def generate_outfit(wardrobe_items: list, season: str, weather: str, event: str,
             "shawl_id": "Şal/Eşarp'ın ID'si (varsa, yoksa null)"
         }}
         '''
-        
-        response = model.generate_content(prompt)
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
         text = response.text
         # Remove markdown formatting if any
         result_text = text.replace('```json', '').replace('```', '').strip()
@@ -118,8 +121,6 @@ def generate_travel_pack(wardrobe_items: list, destination: str, start_date: str
         return {}
 
     try:
-        model = genai.GenerativeModel('gemini-flash-latest')
-        
         items_str = ""
         for item in wardrobe_items:
             items_str += f"- ID: {item.get('id')}, Adı: {item.get('name')}, Kategori: {item.get('category')}, Renk: {item.get('color')}\n"
@@ -157,8 +158,11 @@ def generate_travel_pack(wardrobe_items: list, destination: str, start_date: str
         }}
         Seyahatin gün sayısını Başlangıç ve Bitiş tarihlerinden hesapla (maksimum 7 gün için plan yap). Eğer kıyafet yoksa ilgili ID yerine null dön.
         '''
-        
-        response = model.generate_content(prompt)
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
         text = response.text
         result_text = text.replace('```json', '').replace('```', '').strip()
             

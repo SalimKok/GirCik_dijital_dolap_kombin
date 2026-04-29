@@ -34,6 +34,13 @@ async def update_user(db: AsyncSession, db_user: User, user_in: UserUpdate) -> U
     await db.refresh(db_user)
     return db_user
 
+async def update_fcm_token(db: AsyncSession, db_user: User, token: str) -> User:
+    db_user.fcm_token = token
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+
 async def delete_user(db: AsyncSession, db_user: User) -> bool:
     await db.delete(db_user)
     await db.commit()

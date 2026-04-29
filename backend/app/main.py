@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.database import engine, Base
 from app.routers import auth, clothing, outfits, laundry, calendar, subscription, travel
+from app.services import notification_service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -11,6 +12,10 @@ async def lifespan(app: FastAPI):
     # For development without alembic, we can uncomment the following:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Start the notification scheduler
+    notification_service.start_scheduler()
+    
     yield
     await engine.dispose()
 

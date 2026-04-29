@@ -8,3 +8,6 @@ python-dotenv
 python-multipart
 asyncpg
 alembic
+firebase-admin
+apscheduler
+google-genai

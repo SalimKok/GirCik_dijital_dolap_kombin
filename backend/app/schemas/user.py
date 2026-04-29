@@ -17,6 +17,9 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     password: Optional[str] = None
 
+class UserFCMUpdate(BaseModel):
+    fcm_token: str
+
 class UserInDBBase(UserBase):
     id: int
     created_at: datetime

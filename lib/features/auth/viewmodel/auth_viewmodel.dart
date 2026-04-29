@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gircik/features/auth/repository/auth_repository.dart';
+import 'package:gircik/core/services/notification_service.dart';
 
 enum AuthStatus { initial, authenticated, unauthenticated }
 
@@ -51,6 +52,16 @@ class AuthViewModel extends Notifier<AuthState> {
       status: loggedIn ? AuthStatus.authenticated : AuthStatus.unauthenticated,
       hasSeenWelcome: seenWelcome,
     );
+
+    if (loggedIn) {
+      // Initialize notifications if logged in
+      // Try-catch in case Firebase is not configured yet
+      try {
+        await ref.read(notificationServiceProvider).initialize();
+      } catch (e) {
+        print("Firebase notification initialization skipped: $e");
+      }
+    }
   }
 
   Future<void> setLoggedIn(bool value) async {
@@ -70,6 +81,13 @@ class AuthViewModel extends Notifier<AuthState> {
     try {
       await ref.read(authRepositoryProvider).login(email, password);
       await setLoggedIn(true);
+      
+      try {
+        await ref.read(notificationServiceProvider).initialize();
+      } catch (e) {
+        print("Firebase notification initialization skipped: $e");
+      }
+
       state = state.copyWith(isLoading: false);
       return true;
     } catch (e) {
@@ -83,6 +101,13 @@ class AuthViewModel extends Notifier<AuthState> {
     try {
       await ref.read(authRepositoryProvider).register(name, email, password);
       await setLoggedIn(true);
+      
+      try {
+        await ref.read(notificationServiceProvider).initialize();
+      } catch (e) {
+        print("Firebase notification initialization skipped: $e");
+      }
+
       state = state.copyWith(isLoading: false);
       return true;
     } catch (e) {

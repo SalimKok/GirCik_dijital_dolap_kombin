@@ -5,9 +5,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas.user import User, UserCreate, UserUpdate
+from app.schemas.user import User, UserCreate, UserUpdate, UserFCMUpdate
 from app.schemas.token import Token
-from app.services import auth_service
+from app.services import auth_service, notification_service
 from app.utils.security import verify_password, create_access_token
 from app.utils.deps import get_current_user
 
@@ -53,6 +53,30 @@ async def update_user_me(
     current_user: Annotated[User, Depends(get_current_user)]
 ) -> User:
     return await auth_service.update_user(db, db_user=current_user, user_in=user_in)
+
+@router.put("/me/fcm-token", response_model=dict)
+async def update_fcm_token(
+    fcm_in: UserFCMUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    await auth_service.update_fcm_token(db, db_user=current_user, token=fcm_in.fcm_token)
+    return {"status": "success"}
+
+@router.post("/test-notification")
+async def test_notification(
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    if not current_user.fcm_token:
+        raise HTTPException(status_code=400, detail="Kullanıcının FCM token'ı bulunamadı.")
+    
+    notification_service.send_push_notification(
+        token=current_user.fcm_token,
+        title="GiyÇık Test 🚀",
+        body="Harika! Bildirim sistemin kusursuz çalışıyor.",
+        data={"type": "test_message"}
+    )
+    return {"status": "success", "message": "Test bildirimi gönderildi."}
 
 @router.delete("/me")
 async def delete_user_me(

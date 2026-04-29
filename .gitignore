@@ -50,3 +50,5 @@ backend/venv/
 backend/__pycache__/
 *.pyc
 .env
+firebase_credentials.json
+backend/firebase_credentials.json

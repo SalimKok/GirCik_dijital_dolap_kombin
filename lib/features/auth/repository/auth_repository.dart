@@ -81,6 +81,17 @@ class AuthRepository {
     }
   }
 
+  Future<void> updateFcmToken(String token) async {
+    try {
+      await _apiClient.client.put(
+        '/auth/me/fcm-token',
+        data: {'fcm_token': token},
+      );
+    } catch (e) {
+      throw Exception('FCM token güncellenemedi: ${_handleError(e)}');
+    }
+  }
+
   String _handleError(dynamic error) {
     if (error is DioException) {
       if (error.response?.data != null && error.response?.data['detail'] != null) {

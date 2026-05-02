@@ -494,7 +494,7 @@ class _OutfitRecommendationScreenState extends ConsumerState<OutfitRecommendatio
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           TextFormField(
             controller: _manualTitleController,
             decoration: InputDecoration(
@@ -502,18 +502,24 @@ class _OutfitRecommendationScreenState extends ConsumerState<OutfitRecommendatio
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
           ),
-          const SizedBox(height: 24),
-          _buildManualSelectionBox(theme, 'Üst Giyim', 'Üst', _manualTopId, Icons.dry_cleaning_rounded, (id) => setState(() => _manualTopId = id)),
           const SizedBox(height: 16),
-          _buildManualSelectionBox(theme, 'Dış Giyim', 'Dış giyim', _manualOuterwearId, Icons.dry_cleaning, (id) => setState(() => _manualOuterwearId = id)),
           const SizedBox(height: 16),
-          _buildManualSelectionBox(theme, 'Alt Giyim', 'Alt', _manualBottomId, Icons.airline_seat_legroom_normal_rounded, (id) => setState(() => _manualBottomId = id)),
-          const SizedBox(height: 16),
-          _buildManualSelectionBox(theme, 'Ayakkabı', 'Ayakkabı', _manualShoesId, Icons.snowshoeing_rounded, (id) => setState(() => _manualShoesId = id)),
-          const SizedBox(height: 16),
-          _buildManualSelectionBox(theme, 'Aksesuar', 'Aksesuar', _manualAccessoryId, Icons.watch_rounded, (id) => setState(() => _manualAccessoryId = id)),
-          const SizedBox(height: 16),
-          _buildManualSelectionBox(theme, 'Şal/Eşarp', 'Şal/Eşarp', _manualShawlId, Icons.checkroom_rounded, (id) => setState(() => _manualShawlId = id)),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 0.85,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              _buildManualSelectionBox(theme, 'Üst Giyim', 'Üst', _manualTopId, Icons.dry_cleaning_rounded, (id) => setState(() => _manualTopId = id)),
+              _buildManualSelectionBox(theme, 'Dış Giyim', 'Dış giyim', _manualOuterwearId, Icons.dry_cleaning, (id) => setState(() => _manualOuterwearId = id)),
+              _buildManualSelectionBox(theme, 'Alt Giyim', 'Alt', _manualBottomId, Icons.airline_seat_legroom_normal_rounded, (id) => setState(() => _manualBottomId = id)),
+              _buildManualSelectionBox(theme, 'Ayakkabı', 'Ayakkabı', _manualShoesId, Icons.snowshoeing_rounded, (id) => setState(() => _manualShoesId = id)),
+              _buildManualSelectionBox(theme, 'Aksesuar', 'Aksesuar', _manualAccessoryId, Icons.watch_rounded, (id) => setState(() => _manualAccessoryId = id)),
+              _buildManualSelectionBox(theme, 'Şal/Eşarp', 'Şal/Eşarp', _manualShawlId, Icons.checkroom_rounded, (id) => setState(() => _manualShawlId = id)),
+            ],
+          ),
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: _isSavingManual ? null : _saveManualOutfit,
@@ -671,7 +677,7 @@ class _OutfitRecommendationScreenState extends ConsumerState<OutfitRecommendatio
   }
 
   Widget _buildManualSelectionBox(ThemeData theme, String title, String category, String? selectedId, IconData icon, Function(String?) onSelected) {
-    final itemName = selectedId != null ? _getItemName(selectedId) : '$title Seç';
+    final itemName = selectedId != null ? _getItemName(selectedId) : title;
     final hasSelection = selectedId != null;
 
     return InkWell(
@@ -680,39 +686,46 @@ class _OutfitRecommendationScreenState extends ConsumerState<OutfitRecommendatio
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: theme.cardTheme.color,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: hasSelection ? theme.colorScheme.primary : theme.colorScheme.outline.withValues(alpha: 0.2),
+            color: hasSelection ? theme.colorScheme.primary : theme.colorScheme.outline.withValues(alpha: 0.15),
             style: BorderStyle.solid,
-            width: 2,
+            width: hasSelection ? 1.5 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: hasSelection ? theme.colorScheme.primary.withValues(alpha: 0.1) : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                color: hasSelection ? theme.colorScheme.primary.withValues(alpha: 0.1) : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: hasSelection ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant),
+              child: Icon(icon, color: hasSelection ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant, size: 24),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(height: 8),
             Expanded(
               child: Text(
                 itemName,
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: theme.textTheme.labelSmall?.copyWith(
                   color: hasSelection ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
                   fontWeight: hasSelection ? FontWeight.bold : FontWeight.normal,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Icon(
-              hasSelection ? Icons.edit_rounded : Icons.add_circle_outline_rounded,
-              color: hasSelection ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
             ),
           ],
         ),

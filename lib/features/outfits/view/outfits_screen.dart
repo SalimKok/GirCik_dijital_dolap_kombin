@@ -111,7 +111,7 @@ class _OutfitsScreenState extends ConsumerState<OutfitsScreen> with SingleTicker
           }
         },
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Yeni Öneri Al'),
+        label: const Text('Yeni kombin'),
       ),
     );
   }

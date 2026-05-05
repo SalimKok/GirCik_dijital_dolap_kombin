@@ -56,13 +56,27 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: isHome 
-            ? Text(
-                'GiyÇık',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.primary,
-                  letterSpacing: -0.5,
+        title: isHome
+            ? ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withValues(alpha: 0.7),
+                    theme.colorScheme.tertiary != theme.colorScheme.primary
+                        ? theme.colorScheme.tertiary
+                        : theme.colorScheme.secondary,
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ).createShader(bounds),
+                child: Text(
+                  'GİYÇIK',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white, // ShaderMask boyar
+                    letterSpacing: -1.0,
+                    fontSize: 26,
+                  ),
                 ),
               )
             : Text(_titles[currentIndex]),
@@ -75,33 +89,80 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
                   ),
                   child: Container(
                     margin: const EdgeInsets.only(left: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: subscription.isPro
-                          ? LinearGradient(
-                              colors: [Colors.amber.shade600, Colors.orange.shade700],
+                          ? const LinearGradient(
+                              colors: [
+                                Color(0xFFFFD700), // Altın sarısı
+                                Color(0xFFFFA500), // Turuncu
+                                Color(0xFFFF8C00), // Koyu turuncu
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             )
-                          : null,
-                      color: subscription.isPro ? null : theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
+                          : LinearGradient(
+                              colors: [
+                                theme.colorScheme.surfaceContainerHighest,
+                                theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
+                              ],
+                            ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: subscription.isPro
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFFFD700).withValues(alpha: 0.5),
+                                blurRadius: 8,
+                                spreadRadius: 0,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [],
+                      border: subscription.isPro
+                          ? Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              width: 1,
+                            )
+                          : Border.all(
+                              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                              width: 1,
+                            ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          subscription.isPro ? Icons.workspace_premium_rounded : Icons.person_rounded,
-                          size: 16,
-                          color: subscription.isPro ? Colors.white : theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          subscription.isPro ? 'PRO' : 'Ücretsiz',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: subscription.isPro ? Colors.white : theme.colorScheme.onSurfaceVariant,
+                        if (subscription.isPro) ...[
+                          const Icon(
+                            Icons.workspace_premium_rounded,
+                            size: 14,
+                            color: Colors.white,
                           ),
-                        ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'PRO',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ] else ...[
+                          Icon(
+                            Icons.person_rounded,
+                            size: 14,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Ücretsiz',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -110,15 +171,33 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
             : null,
         leadingWidth: isHome ? 110 : null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_rounded),
-            tooltip: 'Ayarlar',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  Icons.settings_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              tooltip: 'Ayarlar',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+            ),
           ),
         ],
       ),

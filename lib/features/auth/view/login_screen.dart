@@ -254,8 +254,8 @@ class _LoginBodyState extends ConsumerState<_LoginBody> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 101,
-          height: 100,
+          width: 120,
+          height: 120,
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
@@ -268,17 +268,12 @@ class _LoginBodyState extends ConsumerState<_LoginBody> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             child: Image.asset(
               'assets/images/logo.png',
               fit: BoxFit.cover,
             ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'GİYÇIK',
-          style: theme.textTheme.headlineMedium,
         ),
         const SizedBox(height: 20),
         Text(
